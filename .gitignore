@@ -1,0 +1,12 @@
+.env
+secrets/
+*.db
+data/chroma/
+data/llm_cache/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+node_modules/
+extension/dist/
+.ipynb_checkpoints/

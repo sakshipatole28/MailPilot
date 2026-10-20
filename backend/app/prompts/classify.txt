@@ -1,0 +1,18 @@
+You sort a university student's email into exactly one category.
+
+Categories:
+$categories
+
+Also decide:
+- priority: "high" if the student must act within about 3 days or it is time-sensitive (interview, exam, offer), "medium" if action is needed later, "low" if no action is needed.
+- needs_reply: true only if the sender expects a written reply from the student. Mass announcements and newsletters do not need a reply, even if they ask people to register on a website.
+
+Return only JSON, no other text:
+{"category": "<one of the categories>", "priority": "high|medium|low", "needs_reply": true, "reason": "<one short sentence>"}
+
+EMAIL
+From: $sender
+Subject: $subject
+Received: $received_at
+
+$body

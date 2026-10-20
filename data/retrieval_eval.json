@@ -1,0 +1,20 @@
+[
+  {"query": "Could you share your expected start date and whether you are open to relocating to Pune?", "relevant": ["notes/job_preferences.md"]},
+  {"query": "Please reply with your preferred slot for the technical interview on Thursday or Friday afternoon", "relevant": ["notes/availability.md"]},
+  {"query": "Send scanned copies of your degree certificates, last semester mark sheet and a government ID", "relevant": ["notes/documents.md"]},
+  {"query": "Would you be open to a 20 minute call this week about ML engineering internships?", "relevant": ["notes/availability.md", "notes/job_preferences.md"]},
+  {"query": "Have you accepted any other offer? Litware offer letter deadline", "relevant": ["notes/job_preferences.md", "notes/placement_status.md"]},
+  {"query": "Which campus drives have you registered for and are you shortlisted anywhere?", "relevant": ["notes/placement_status.md"]},
+  {"query": "one offer rule dream companies above 20 LPA", "relevant": ["notes/placement_status.md"]},
+  {"query": "Please confirm your group's slot preference for the progress review: morning or afternoon", "relevant": ["notes/courses.md"]},
+  {"query": "status of the DBMS mini project report and demo", "relevant": ["notes/courses.md"]},
+  {"query": "Can we do a 30-minute mentor check-in? Send time slots that work for your team", "relevant": ["notes/project_mailpilot.md"]},
+  {"query": "Could you fix the CORS error on the frontend before the demo?", "relevant": ["notes/project_mailpilot.md"]},
+  {"query": "Can you take columns J to R of the survey dataset before the lab meeting?", "relevant": ["notes/research.md"]},
+  {"query": "Tell us about a project where you built search or retrieval", "relevant": ["resume.md", "notes/project_mailpilot.md"]},
+  {"query": "What is your CGPA and do you have any backlogs?", "relevant": ["resume.md"]},
+  {"query": "internship experience Bluefin Labs FastAPI PostgreSQL", "relevant": ["resume.md"]},
+  {"query": "Are you coming home this Saturday for dinner?", "relevant": ["notes/personal.md"]},
+  {"query": "Are you available during the first week of November for an on-site interview?", "relevant": ["notes/availability.md"]},
+  {"query": "When can a six-month internship start?", "relevant": ["notes/job_preferences.md"]}
+]
