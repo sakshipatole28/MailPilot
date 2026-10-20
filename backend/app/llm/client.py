@@ -14,6 +14,7 @@ from app.config import settings
 from app.models import LLMOptions
 
 log = logging.getLogger("mailpilot.llm")
+litellm.suppress_debug_info = True  # its banner would print request details to the console
 PROMPTS_DIR = Path(__file__).resolve().parents[1] / "prompts"
 
 RETRYABLE = (
