@@ -1,8 +1,13 @@
 """Local embeddings (sentence-transformers) + persistent Chroma collection."""
+import logging
+
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
 from app.rag.chunker import Chunk
+
+# Chroma 0.6 logs a harmless error on every call when its telemetry client is disabled.
+logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
 
 # bge v1.5 recommends this prefix on queries (not on documents) for retrieval.
 BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
