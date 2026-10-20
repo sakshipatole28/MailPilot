@@ -1,0 +1,11 @@
+**/.venv
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+extension
+data
+results
+docs
+secrets
+.env
+.git
