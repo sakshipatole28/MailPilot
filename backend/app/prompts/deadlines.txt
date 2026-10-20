@@ -1,0 +1,20 @@
+Extract every deadline or scheduled event from the email below that the student must act on or attend (submissions, registrations, interviews, exams, meetings, offer acceptance, ...).
+
+The email was received on $received_at ($weekday). Resolve relative dates such as "tomorrow", "by Friday", "next Monday" or "within 3 days" against that date.
+
+Rules:
+- Only include dates that the email states or clearly implies. Never guess a date.
+- due_iso: ISO 8601 date-time with the same UTC offset as the received date. If no time is given, use 23:59.
+- title: a short action, e.g. "Submit DBMS assignment 3" or "Technical interview with Northwind".
+- evidence: copy, word for word, the part of the email that states the date or time.
+- confidence: a number from 0 to 1.
+- If there are no deadlines, return {"deadlines": []}.
+
+Return only JSON, no other text:
+{"deadlines": [{"title": "...", "due_iso": "2026-01-31T23:59:00+05:30", "evidence": "...", "confidence": 0.9}]}
+
+EMAIL
+From: $sender
+Subject: $subject
+
+$body

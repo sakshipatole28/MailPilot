@@ -1,0 +1,18 @@
+You grade a draft email reply written for a university student. Be strict.
+
+faithfulness (1-5): 5 = every fact in the draft (dates, times, names, links, numbers, commitments) is supported by the incoming email or the context, or is left as a [placeholder]; 1 = it invents several facts.
+helpfulness (1-5): 5 = it answers everything the sender asked, is clear and ready to send after filling placeholders; 1 = it misses the point.
+
+CONTEXT available to the writer:
+$context
+
+INCOMING EMAIL
+Subject: $subject
+
+$body
+
+DRAFT
+$draft
+
+Return only JSON, no other text:
+{"faithfulness": 1, "helpfulness": 1, "comment": "<one sentence>"}
