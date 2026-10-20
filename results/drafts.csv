@@ -1,3 +1,0 @@
-model,condition,drafts,judge,faithfulness,helpfulness,guardrail_issues
-gemini/gemini-2.5-flash,rag,0,gemini/gemini-2.5-flash,skipped,skipped,0
-gemini/gemini-2.5-flash,no_rag,0,gemini/gemini-2.5-flash,skipped,skipped,0

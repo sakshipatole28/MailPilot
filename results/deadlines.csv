@@ -1,2 +1,0 @@
-model,mails,precision,recall,f1,failed_calls
-gemini/gemini-2.5-flash,0,skipped,skipped,skipped,1
