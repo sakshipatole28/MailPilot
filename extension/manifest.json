@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "MailPilot",
+  "version": "0.1.0",
+  "description": "Sorts mail, tracks deadlines and drafts replies. Never sends anything.",
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "MailPilot"
+  },
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "permissions": ["storage", "alarms", "notifications"],
+  "host_permissions": ["http://localhost:8000/*", "http://127.0.0.1:8000/*"],
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
+}
