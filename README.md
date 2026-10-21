@@ -73,6 +73,8 @@ Then open `chrome://extensions`, turn on Developer mode, click "Load unpacked" a
 
 ## Tests
 
+CI (GitHub Actions) runs both suites and the extension build on every push.
+
 ```bash
 cd backend && .venv/bin/pytest -q      # 40 tests: fake LLM and fake embedder, no network
 cd extension && npm test               # reminder scheduling, badge count, key routing
@@ -129,3 +131,7 @@ eval/              run_eval.py, eval.ipynb
 results/           CSVs + summary.md
 docs/              architecture.png, ui-tour.gif, screenshots/
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE).
