@@ -8,18 +8,14 @@
 - [x] Reply and compose generator with regex guardrails
 - [x] RAG: chunker with front matter, Chroma + bge-small, BM25, RRF, category/contact/doc-type filters, optional rerank
 - [x] API: mail, classify, deadlines, draft, feedback, compose, rag ingest, settings
-- [x] 55 labeled sample mails, 15-file context corpus, 18 labeled retrieval queries
-- [x] Backend tests (40) and extension tests (4)
+- [x] 61 labeled sample mails (23 need a reply), 15-file context corpus
+- [x] Two labeled retrieval query sets (original wording + paraphrased)
+- [x] Backend tests and extension tests, run in GitHub Actions CI
 - [x] Extension: popup with 5 tabs, background alarms (24 h / 2 h), badge for items due today
-- [x] Eval script; retrieval and keyword-baseline results in results/
-- [x] Dockerfile + docker-compose.yml (config validated)
-- [x] README, DECISIONS, architecture diagram, UI screenshots
+- [x] Eval on three Groq models; draft quality judged with claim-level faithfulness, rubric helpfulness, swapped-order pairwise preference and two judges
+- [x] README, DECISIONS, architecture diagram, demo GIF from the real app
 
 ## Open
-- [ ] Run `eval/run_eval.py --models ...` with a Gemini/Groq key (or Ollama) and copy the LLM rows into the README
-- [ ] Fill in `results/manual_ratings.csv` (manual 1-5 on a subset of drafts)
-- [ ] Record a demo GIF that includes a generated draft (needs a model)
-- [ ] Build and run the Docker image once (`docker compose up --build`); it was not built on the dev machine because of disk space
-- [ ] Paraphrased retrieval queries to compare hybrid vs BM25 fairly
+- [ ] Gmail: test with a real account (needs `secrets/credentials.json` from Google Cloud)
 - [ ] Stretch: `gmail.compose` scope to save drafts directly into Gmail
-- [ ] Add 5-10 more needs-reply mails so the draft eval reaches the planned 20-30
+- [ ] Stretch: a small human-rated subset to calibrate the LLM judges

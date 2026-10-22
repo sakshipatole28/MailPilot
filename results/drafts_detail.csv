@@ -1,0 +1,599 @@
+mail_id,category,condition,judge,faithfulness,claims,unsupported_claims,helpfulness,unsupported,missing,guardrail_flags,placeholders,sources,draft
+m061,Other,rag,groq/qwen/qwen3.8-27b,1.0,1,0,4,,"The draft uses placeholders for the room number and dates, which are required by the email. While the context implies the writer intends to stay on campus around the break (Oct 31), it does not explicitly confirm the specific dates of the Diwali break or the room number, so the user must fill these ",0,3,notes/personal.md;notes/availability.md;resume.md;resume.md,"Dear Hostel Warden,
+
+Thank you for the information. I would like to stay in the hostel during the Diwali break. My room number is [room number] and I plan to stay from [start date] to [end date]. Please let me know if any further details are required.
+
+Regards,
+Sam Rivera"
+m061,Other,rag,groq/openai/gpt-oss-20b,1.0,2,0,4,,room number and dates of stay,0,3,notes/personal.md;notes/availability.md;resume.md;resume.md,"Dear Hostel Warden,
+
+Thank you for the information. I would like to stay in the hostel during the Diwali break. My room number is [room number] and I plan to stay from [start date] to [end date]. Please let me know if any further details are required.
+
+Regards,
+Sam Rivera"
+m061,Other,no_rag,groq/qwen/qwen3.8-27b,1.0,2,0,4,,"The draft uses placeholders for the room number and specific dates, which are required by the email but not provided in the context. However, the structure correctly addresses the request.",0,3,,"Dear Hostel Warden,
+
+Thank you for the information. I would like to stay in the hostel over the Diwali break. My room number is [room number] and I plan to stay from [start date] to [end date]. Please let me know if any further details are needed.
+
+Best regards,
+Sam Rivera"
+m061,Other,no_rag,groq/openai/gpt-oss-20b,0.0,1,1,5,I would like to stay in the hostel over the Diwali break.,Reply deadline of 26 October,0,3,,"Dear Hostel Warden,
+
+Thank you for the information. I would like to stay in the hostel over the Diwali break. My room number is [room number] and I plan to stay from [start date] to [end date]. Please let me know if any further details are needed.
+
+Best regards,
+Sam Rivera"
+m059,Academic,rag,groq/qwen/qwen3.8-27b,1.0,4,0,4,,"The draft does not explicitly confirm the deadline (28 October) or acknowledge the specific reason for the offer (previous TA work), though it implicitly accepts the terms. It also fails to mention the specific constraint about Thursdays being busy until 5 PM, which might be relevant for scheduling,",0,0,notes/availability.md;notes/courses.md;resume.md;resume.md,"Hi Dr. Thomas,
+
+Thank you for considering me for the Machine Learning TA role. I would be happy to take on the position next semester and commit to the 6‑hour weekly workload.
+
+My availability aligns with the usual schedule: weekdays after 2 PM work best, and I can also do mornings before 1 PM on Monday, Wednesday, and Friday if needed for any prep meetings.
+
+Please let me know the next steps.
+
+Best regards,
+Sam Rivera"
+m059,Academic,rag,groq/openai/gpt-oss-20b,1.0,5,0,3,,deadline 28 October,0,0,notes/availability.md;notes/courses.md;resume.md;resume.md,"Hi Dr. Thomas,
+
+Thank you for considering me for the Machine Learning TA role. I would be happy to take on the position next semester and commit to the 6‑hour weekly workload.
+
+My availability aligns with the usual schedule: weekdays after 2 PM work best, and I can also do mornings before 1 PM on Monday, Wednesday, and Friday if needed for any prep meetings.
+
+Please let me know the next steps.
+
+Best regards,
+Sam Rivera"
+m059,Academic,no_rag,groq/qwen/qwen3.8-27b,0.75,4,1,3,The writer will confirm final availability by the 28 October deadline.,"The draft fails to explicitly accept the position. It expresses enthusiasm and states the commitment fits, but ends with a promise to 'confirm final availability' later, which leaves the request ('would you be willing...?') unanswered. A strict interpretation requires a clear 'Yes'.",0,0,,"Hi Dr. Thomas,
+
+Thank you for considering me for the Machine Learning TA role. I’m enthusiastic about the opportunity and would be happy to support the course next semester. The 6‑hour weekly commitment fits well with my schedule.
+
+Please let me know if there are any additional details I should be aware of (e.g., start date, specific responsibilities, or required preparation). I will confirm my final availability by the 28 October deadline.
+
+Best regards,
+Sam Rivera"
+m059,Academic,no_rag,groq/openai/gpt-oss-20b,0.8,5,1,5,I’m enthusiastic about the opportunity.,,0,0,,"Hi Dr. Thomas,
+
+Thank you for considering me for the Machine Learning TA role. I’m enthusiastic about the opportunity and would be happy to support the course next semester. The 6‑hour weekly commitment fits well with my schedule.
+
+Please let me know if there are any additional details I should be aware of (e.g., start date, specific responsibilities, or required preparation). I will confirm my final availability by the 28 October deadline.
+
+Best regards,
+Sam Rivera"
+m056,HR/Recruiter,rag,groq/qwen/qwen3.8-27b,1.0,5,0,5,,,0,0,resume.md;notes/availability.md;replies/recruiter_followup.md;replies/interview_slot.md,"Hi Kavya,
+
+Thanks for checking in. For the coding round I’m most comfortable using Python, and I have hands‑on experience with PostgreSQL from my internship at Bluefin Labs and several projects.
+
+Let me know if you need any additional details before Monday.
+
+Best regards,
+Sam Rivera"
+m056,HR/Recruiter,rag,groq/openai/gpt-oss-20b,1.0,3,0,5,,,0,0,resume.md;notes/availability.md;replies/recruiter_followup.md;replies/interview_slot.md,"Hi Kavya,
+
+Thanks for checking in. For the coding round I’m most comfortable using Python, and I have hands‑on experience with PostgreSQL from my internship at Bluefin Labs and several projects.
+
+Let me know if you need any additional details before Monday.
+
+Best regards,
+Sam Rivera"
+m056,HR/Recruiter,no_rag,groq/qwen/qwen3.8-27b,1.0,2,0,2,,"The draft fails to specify the actual programming language or the level of PostgreSQL experience, leaving the core questions unanswered with placeholders.",0,2,,"Hi Kavya,
+
+Thanks for reaching out. For the coding round I’d prefer to use [preferred programming language]. I have [PostgreSQL experience] with PostgreSQL. I’ll confirm these details by Friday so you can set up the environment.
+
+Looking forward to the interview on Monday.
+
+Best regards,
+Sam Rivera"
+m056,HR/Recruiter,no_rag,groq/openai/gpt-oss-20b,0.75,4,1,4,The writer prefers to use a certain programming language for the coding round,preferred programming language and PostgreSQL experience details,0,2,,"Hi Kavya,
+
+Thanks for reaching out. For the coding round I’d prefer to use [preferred programming language]. I have [PostgreSQL experience] with PostgreSQL. I’ll confirm these details by Friday so you can set up the environment.
+
+Looking forward to the interview on Monday.
+
+Best regards,
+Sam Rivera"
+m058,Placement,rag,groq/qwen/qwen3.8-27b,1.0,1,0,4,,"The draft does not explicitly confirm the deadline (24 October 2026) or acknowledge the consequence of incomplete profiles, though it addresses the core request to provide the SGPA.",0,1,notes/availability.md;notes/placement_status.md;replies/placement_cell.md;resume.md,"Dear Placement Officer,
+
+Thank you for bringing this to my attention. I will update the portal with my semester 6 SGPA shortly. For reference, my SGPA for semester 6 is [semester 6 SGPA].
+
+Please let me know if any further information is required.
+
+Best regards,
+Sam Rivera"
+m058,Placement,rag,groq/openai/gpt-oss-20b,1.0,1,0,4,,deadline 24 October 2026,0,1,notes/availability.md;notes/placement_status.md;replies/placement_cell.md;resume.md,"Dear Placement Officer,
+
+Thank you for bringing this to my attention. I will update the portal with my semester 6 SGPA shortly. For reference, my SGPA for semester 6 is [semester 6 SGPA].
+
+Please let me know if any further information is required.
+
+Best regards,
+Sam Rivera"
+m058,Placement,no_rag,groq/qwen/qwen3.8-27b,0.5,2,1,4,The writer will update the placement portal with the semester 6 SGPA.,"The draft uses a placeholder for the actual SGPA value instead of providing the specific number (8.4) found in the context, requiring manual filling before sending.",0,1,,"Dear Placement Officer,
+
+Thank you for bringing this to my attention. My semester 6 SGPA is [semester 6 SGPA]. I will also update the placement portal with this information before the 24 October deadline.
+
+Please let me know if anything else is required.
+
+Best regards,
+Sam Rivera"
+m058,Placement,no_rag,groq/openai/gpt-oss-20b,1.0,1,0,5,,,0,1,,"Dear Placement Officer,
+
+Thank you for bringing this to my attention. My semester 6 SGPA is [semester 6 SGPA]. I will also update the placement portal with this information before the 24 October deadline.
+
+Please let me know if anything else is required.
+
+Best regards,
+Sam Rivera"
+m060,Project,rag,groq/qwen/qwen3.8-27b,0.5,4,2,2,The writer will review the details of issue #501. | The writer will get back to the sender with an estimated completion date.,"The draft fails to provide the requested estimate for when the fix for issue #501 will be ready. Instead, it asks for more information and promises a future reply, which does not answer the direct question in the incoming email.",0,0,notes/project_mailpilot.md;notes/availability.md;resume.md;replies/teammate.md,"Hi OpenKit team,
+
+Thanks for reaching out about the v2.3 release. I’ll review the details of issue #501 and get back to you with an estimated completion date. Could you let me know if there are any hard deadlines before the freeze on 5 November that I should be aware of?
+
+Looking forward to aligning on the timeline.
+
+Best regards,
+Sam Rivera"
+m060,Project,rag,groq/openai/gpt-oss-20b,0.75,8,2,4,Could you let me know if there are any hard deadlines before the freeze on 5 November that I should be aware of? | Looking forward to aligning on the timeline.,No estimate for completion date provided.,0,0,notes/project_mailpilot.md;notes/availability.md;resume.md;replies/teammate.md,"Hi OpenKit team,
+
+Thanks for reaching out about the v2.3 release. I’ll review the details of issue #501 and get back to you with an estimated completion date. Could you let me know if there are any hard deadlines before the freeze on 5 November that I should be aware of?
+
+Looking forward to aligning on the timeline.
+
+Best regards,
+Sam Rivera"
+m060,Project,no_rag,groq/qwen/qwen3.8-27b,0.0,4,4,2,The writer is coordinating the work on issue #501. | The writer will have a concrete estimate for the fix shortly. | The writer aims to have the fix ready well before the 5 November freeze. | The writer will let the recipient know the exact date as soon as possible.,"The draft fails to provide the requested estimate for when the fix will be ready. It also incorrectly assumes the writer is 'coordinating' the work, whereas the context only lists them as a contributor (PR #482) without specifying their role in issue #501. Furthermore, the context indicates the writ",0,0,,"Hi OpenKit team,
+
+Thanks for outlining the v2.3 release timeline. I’m coordinating the work on issue #501 and will have a concrete estimate for the fix shortly. I’ll aim to have it ready well before the 5 November freeze and will let you know the exact date as soon as possible.
+
+Please let me know if there are any additional constraints I should consider.
+
+Best regards,
+Sam Rivera"
+m060,Project,no_rag,groq/openai/gpt-oss-20b,0.429,7,4,4,Thanks for outlining the v2.3 release timeline. | will have a concrete estimate for the fix shortly. | I’ll aim to have it ready well before the 5 November freeze. | will let you know the exact date as soon as possible.,Concrete estimate for fix date,0,0,,"Hi OpenKit team,
+
+Thanks for outlining the v2.3 release timeline. I’m coordinating the work on issue #501 and will have a concrete estimate for the fix shortly. I’ll aim to have it ready well before the 5 November freeze and will let you know the exact date as soon as possible.
+
+Please let me know if there are any additional constraints I should consider.
+
+Best regards,
+Sam Rivera"
+m049,Other,rag,groq/qwen/qwen3.8-27b,0.5,2,1,3,The writer will be home this Saturday.,"The draft incorrectly states the writer will be home, contradicting the context which states the writer wants to stay on campus on 31 October (assuming 'this Saturday' refers to that date or a similar weekend where the writer is staying on campus). Even if the date is ambiguous, the context explicit",0,0,notes/personal.md;resume.md;notes/availability.md;resume.md,"Hi Maya,
+
+Thanks for the invitation! I’ll be home this Saturday and look forward to dinner with Grandma.
+
+See you then.
+
+Love,
+Sam Rivera"
+m049,Other,rag,groq/openai/gpt-oss-20b,0.333,3,2,5,I’ll be home this Saturday | look forward to dinner with Grandma,,0,0,notes/personal.md;resume.md;notes/availability.md;resume.md,"Hi Maya,
+
+Thanks for the invitation! I’ll be home this Saturday and look forward to dinner with Grandma.
+
+See you then.
+
+Love,
+Sam Rivera"
+m049,Other,no_rag,groq/qwen/qwen3.8-27b,0.5,4,2,2,The writer will double-check their schedule. | The writer will get back to the sender shortly with a firm answer.,"The draft fails to provide a definitive answer (yes or no) to the question 'Are you coming home this Saturday for dinner?'. The context indicates the writer usually goes home on weekends unless there is a deadline, and specifically wants to stay on campus on 31 October for a hackathon. Without knowi",0,0,,"Hi Maya,
+
+Thanks for the invitation! I’d love to join you and Grandma for dinner on Saturday. I’ll double‑check my schedule and get back to you shortly with a firm answer.
+
+Looking forward to seeing everyone.
+
+Love,
+Sam Rivera"
+m049,Other,no_rag,groq/openai/gpt-oss-20b,0.4,5,3,3,I’d love to join you and Grandma for dinner on Saturday. | I’ll double‑check my schedule and get back to you shortly with a firm answer. | Looking forward to seeing everyone.,Definitive answer to whether Sam will come home this Saturday.,0,0,,"Hi Maya,
+
+Thanks for the invitation! I’d love to join you and Grandma for dinner on Saturday. I’ll double‑check my schedule and get back to you shortly with a firm answer.
+
+Looking forward to seeing everyone.
+
+Love,
+Sam Rivera"
+m057,HR/Recruiter,rag,groq/qwen/qwen3.8-27b,1.0,5,0,4,,"The draft does not provide a specific convenient time for the call, only asking the sender to suggest one, whereas the email explicitly requested the writer to share a convenient time.",0,0,replies/recruiter_followup.md;resume.md;notes/job_preferences.md;replies/interview_slot.md,"Hi Neil,
+
+Thank you for the kind words. I really enjoyed my internship at Bluefin Labs and would be excited to discuss a full‑time opportunity.
+
+My current CGPA is 8.4 (after semester 6). I am available for a call next week; please let me know a time that works for you or feel free to suggest a slot and I will confirm.
+
+Looking forward to our conversation.
+
+Best regards,
+Sam Rivera"
+m057,HR/Recruiter,rag,groq/openai/gpt-oss-20b,0.167,6,5,5,I really enjoyed my internship at Bluefin Labs | I would be excited to discuss a full‑time opportunity | I am available for a call next week | Please let me know a time that works for you or feel free to suggest a slot and I will confirm | Looking forward to our conversation,,0,0,replies/recruiter_followup.md;resume.md;notes/job_preferences.md;replies/interview_slot.md,"Hi Neil,
+
+Thank you for the kind words. I really enjoyed my internship at Bluefin Labs and would be excited to discuss a full‑time opportunity.
+
+My current CGPA is 8.4 (after semester 6). I am available for a call next week; please let me know a time that works for you or feel free to suggest a slot and I will confirm.
+
+Looking forward to our conversation.
+
+Best regards,
+Sam Rivera"
+m057,HR/Recruiter,no_rag,groq/qwen/qwen3.8-27b,1.0,2,0,4,,"The draft uses placeholders for the CGPA and call times instead of providing the specific values available in the context (CGPA 8.4) or a concrete time slot, though it structurally addresses all requests.",0,2,,"Hi Neil,
+
+Thank you for the kind words – I really enjoyed my time at Bluefin Labs this summer. I’m definitely interested in exploring a full‑time opportunity after graduation. My current CGPA is [current CGPA].
+
+I’m available for a call next week on [suggested call times]. Please let me know which slot works best for you.
+
+Looking forward to speaking soon.
+
+Sam Rivera"
+m057,HR/Recruiter,no_rag,groq/openai/gpt-oss-20b,0.5,2,1,5,I really enjoyed my time at Bluefin Labs this summer.,,0,2,,"Hi Neil,
+
+Thank you for the kind words – I really enjoyed my time at Bluefin Labs this summer. I’m definitely interested in exploring a full‑time opportunity after graduation. My current CGPA is [current CGPA].
+
+I’m available for a call next week on [suggested call times]. Please let me know which slot works best for you.
+
+Looking forward to speaking soon.
+
+Sam Rivera"
+m012,HR/Recruiter,rag,groq/qwen/qwen3.8-27b,1.0,2,0,5,,,0,0,notes/availability.md;replies/interview_slot.md;notes/job_preferences.md;resume.md,"Hi Priya,
+
+Thank you for the invitation. The slot on Friday, 23 October at 3:00 PM (IST) works well for me. I look forward to joining the Google Meet link you will share.
+
+Best regards,
+Sam Rivera"
+m012,HR/Recruiter,rag,groq/openai/gpt-oss-20b,1.0,2,0,5,,,0,0,notes/availability.md;replies/interview_slot.md;notes/job_preferences.md;resume.md,"Hi Priya,
+
+Thank you for the invitation. The slot on Friday, 23 October at 3:00 PM (IST) works well for me. I look forward to joining the Google Meet link you will share.
+
+Best regards,
+Sam Rivera"
+m012,HR/Recruiter,no_rag,groq/qwen/qwen3.8-27b,0.667,3,1,3,The preferred interview slot is Thursday 22 October at 11:00 AM IST.,The draft selects a slot (Thursday 11:00 AM) that conflicts with the writer's stated availability (Thursdays are busy until 5 PM due to lab; mornings before 1 PM are only possible on Mon/Wed/Fri). The writer should have selected the Friday 3:00 PM slot or requested a different time.,0,0,,"Hi Priya,
+
+Thank you for the opportunity. I’d be happy to join the technical interview on Thursday 22 October at 11:00 AM IST via Google Meet.
+
+Please let me know if there’s anything I should prepare in advance.
+
+Looking forward to speaking with the team.
+
+Best regards,
+Sam Rivera"
+m012,HR/Recruiter,no_rag,groq/openai/gpt-oss-20b,1.0,1,0,5,,,0,0,,"Hi Priya,
+
+Thank you for the opportunity. I’d be happy to join the technical interview on Thursday 22 October at 11:00 AM IST via Google Meet.
+
+Please let me know if there’s anything I should prepare in advance.
+
+Looking forward to speaking with the team.
+
+Best regards,
+Sam Rivera"
+m044,Project,rag,groq/qwen/qwen3.8-27b,0.8,5,1,4,Sam will send a calendar invite once a slot is selected.,"The draft includes a Saturday slot despite the mentor explicitly asking for Friday slots (though it is framed as an alternative). The commitment to send a calendar invite is a new action not derived from the context, but is a standard professional courtesy; however, strictly speaking, it is an unsup",6,6,notes/project_mailpilot.md;resume.md;replies/teammate.md;notes/availability.md,"Hi Ravi,
+
+Thanks for reaching out. Our team can meet on Friday evening. Here are a few options:
+
+- Friday, [confirm: 6:30 PM] – [confirm: 7:00 PM]
+- Friday, [confirm: 7:30 PM] – [confirm: 8:00 PM]
+- Saturday, [confirm: 10:00 AM] – [confirm: 10:30 AM] (if a weekend slot works better)
+
+Please let me know which slot fits your schedule, and I’ll send a calendar invite.
+
+Looking forward to the check‑in.
+
+Best regards,
+Sam Rivera"
+m044,Project,rag,groq/openai/gpt-oss-20b,0.333,3,2,4,Saturday slot works better. | I’ll send a calendar invite.,The draft does not confirm the 30‑minute duration of the check‑in.,6,6,notes/project_mailpilot.md;resume.md;replies/teammate.md;notes/availability.md,"Hi Ravi,
+
+Thanks for reaching out. Our team can meet on Friday evening. Here are a few options:
+
+- Friday, [confirm: 6:30 PM] – [confirm: 7:00 PM]
+- Friday, [confirm: 7:30 PM] – [confirm: 8:00 PM]
+- Saturday, [confirm: 10:00 AM] – [confirm: 10:30 AM] (if a weekend slot works better)
+
+Please let me know which slot fits your schedule, and I’ll send a calendar invite.
+
+Looking forward to the check‑in.
+
+Best regards,
+Sam Rivera"
+m044,Project,no_rag,groq/qwen/qwen3.8-27b,0.667,3,1,2,The writer will get back to the sender shortly.,"The draft fails to provide the two or three specific time slots requested by the mentor. Instead, it asks the mentor for their availability, which contradicts the explicit instruction to 'send me two or three time slots that work for your team'.",0,0,,"Hi Ravi,
+
+Thanks for reaching out. I'd be happy to set up a 30‑minute check‑in on Friday. Could you let me know your availability, or should I propose a few slots? I’ll coordinate with the team and get back to you shortly.
+
+Looking forward to our conversation.
+
+Sam Rivera"
+m044,Project,no_rag,groq/openai/gpt-oss-20b,0.75,4,1,3,coordinate with the team,Provide two or three time slots that work for the team.,0,0,,"Hi Ravi,
+
+Thanks for reaching out. I'd be happy to set up a 30‑minute check‑in on Friday. Could you let me know your availability, or should I propose a few slots? I’ll coordinate with the team and get back to you shortly.
+
+Looking forward to our conversation.
+
+Sam Rivera"
+m035,Project,rag,groq/qwen/qwen3.8-27b,0.8,5,1,4,The meeting is on Tuesday.,"The draft assumes the day is 'Tuesday' which is not stated in the incoming email or context (the context only gives general availability, not the specific date of 'tomorrow'). While the writer's general availability (weekday evenings) supports the time, the specific day claim is unsupported by the p",1,1,replies/teammate.md;notes/availability.md;notes/project_mailpilot.md;resume.md,"Hey Kabir,
+
+Thanks for the note. [confirm: Tuesday] at 6 PM in the library works perfectly for me. I’ll be there and we can lock down the email‑assistant concept.
+
+See you then.
+
+Sam Rivera"
+m035,Project,rag,groq/openai/gpt-oss-20b,0.714,7,2,5,Meeting day is Tuesday | Sam will attend,,1,1,replies/teammate.md;notes/availability.md;notes/project_mailpilot.md;resume.md,"Hey Kabir,
+
+Thanks for the note. [confirm: Tuesday] at 6 PM in the library works perfectly for me. I’ll be there and we can lock down the email‑assistant concept.
+
+See you then.
+
+Sam Rivera"
+m035,Project,no_rag,groq/qwen/qwen3.8-27b,1.0,4,0,5,,,0,0,,"Hi Kabir,
+
+Thanks for the heads‑up. Meeting tomorrow at 6 PM in the library works for me. I’m looking forward to discussing the email‑assistant concept and finalizing our idea before the CodeFest deadline.
+
+See you then!
+
+Sam Rivera"
+m035,Project,no_rag,groq/openai/gpt-oss-20b,1.0,2,0,5,,,0,0,,"Hi Kabir,
+
+Thanks for the heads‑up. Meeting tomorrow at 6 PM in the library works for me. I’m looking forward to discussing the email‑assistant concept and finalizing our idea before the CodeFest deadline.
+
+See you then!
+
+Sam Rivera"
+m018,HR/Recruiter,rag,groq/qwen/qwen3.8-27b,0.5,2,1,4,The writer is available for a 20-minute call this week.,"The draft does not provide specific time slots for the call, relying on a placeholder instead of offering concrete options as requested by the sender.",0,1,replies/interview_slot.md;notes/job_preferences.md;replies/recruiter_followup.md;resume.md,"Hi Jordan,
+
+Thanks for reaching out and for noticing my retrieval project. I’m interested in learning more about the ML engineering internship at Woodgrove. I’m available for a 20‑minute call this week; could we schedule it for [suggest a few time slots]?
+
+Looking forward to our conversation.
+
+Best regards,
+Sam Rivera"
+m018,HR/Recruiter,rag,groq/openai/gpt-oss-20b,0.0,2,2,5,I’m interested in learning more about the ML engineering internship at Woodgrove. | I’m available for a 20‑minute call this week.,,0,1,replies/interview_slot.md;notes/job_preferences.md;replies/recruiter_followup.md;resume.md,"Hi Jordan,
+
+Thanks for reaching out and for noticing my retrieval project. I’m interested in learning more about the ML engineering internship at Woodgrove. I’m available for a 20‑minute call this week; could we schedule it for [suggest a few time slots]?
+
+Looking forward to our conversation.
+
+Best regards,
+Sam Rivera"
+m018,HR/Recruiter,no_rag,groq/qwen/qwen3.8-27b,1.0,3,0,4,,"The draft asks the recruiter to propose times or offers to propose times, but does not explicitly state the writer's specific availability or constraints (e.g., semester 8 internship start in Jan 2027 vs current date), though this is often handled in the follow-up. However, strictly speaking, it ans",0,1,,"Hi Jordan,
+
+Thanks for reaching out and for your interest in my work on the retrieval project. I’m definitely interested in learning more about the ML engineering internship at Woodgrove.
+
+I’m available for a 20‑minute call this week. Could you let me know which slots work for you, or would you like me to propose a few times? [suggest times]
+
+Looking forward to our conversation.
+
+Best regards,
+Sam Rivera"
+m018,HR/Recruiter,no_rag,groq/openai/gpt-oss-20b,1.0,2,0,5,,,0,1,,"Hi Jordan,
+
+Thanks for reaching out and for your interest in my work on the retrieval project. I’m definitely interested in learning more about the ML engineering internship at Woodgrove.
+
+I’m available for a 20‑minute call this week. Could you let me know which slots work for you, or would you like me to propose a few times? [suggest times]
+
+Looking forward to our conversation.
+
+Best regards,
+Sam Rivera"
+m016,HR/Recruiter,rag,groq/qwen/qwen3.8-27b,0.667,9,3,4,The writer will send these documents shortly. | The writer will forward the bonafide certificate as soon as they have it. | The writer will forward the bonafide certificate well before the 24th October deadline.,"The draft does not explicitly confirm that the documents will be sent by the 24th October deadline for the mark sheet and passport, only implying it for the bonafide certificate. It also does not explicitly state that the 'last semester' refers to Semester 6, though this is implied by the context of",0,0,notes/documents.md;replies/interview_slot.md;resume.md;notes/job_preferences.md,"Dear Ms. Rao,
+
+Thank you for the information. I will send the scanned copies of my last semester mark sheet and my passport (government ID) shortly.
+
+As I graduate in 2027, the degree certificate is not yet available. I can provide a bonafide certificate from my college, which I expect to receive within three working days. I will forward that as soon as I have it, well before the 24th October deadline.
+
+Please let me know if any additional documents are needed.
+
+Regards,
+Sam Rivera"
+m016,HR/Recruiter,no_rag,groq/qwen/qwen3.8-27b,0.0,2,2,2,"The writer will gather scanned copies of degree certificates, the last semester mark sheet, and a government ID. | The writer will send the documents well before the 24th October deadline.","The draft falsely claims the writer can provide degree certificates, which the context states are not available until 2027. It fails to offer the available alternative (bonafide certificate) or explain the delay, which is critical for the HR request.",0,0,,"Hi Anita,
+
+Thank you for outlining the documents needed for the background verification. I will gather the scanned copies of my degree certificates, the last semester mark sheet, and a government ID and send them to you well before the 24th October deadline.
+
+Please let me know if there are any specific file formats or naming conventions you prefer.
+
+Thanks again for your assistance.
+
+Sam Rivera"
+m016,HR/Recruiter,no_rag,groq/openai/gpt-oss-20b,0.75,4,1,3,The writer asks if there are any specific file formats or naming conventions,The draft does not mention that the writer does not yet have the degree certificate and will provide a bonafide certificate instead.,0,0,,"Hi Anita,
+
+Thank you for outlining the documents needed for the background verification. I will gather the scanned copies of my degree certificates, the last semester mark sheet, and a government ID and send them to you well before the 24th October deadline.
+
+Please let me know if there are any specific file formats or naming conventions you prefer.
+
+Thanks again for your assistance.
+
+Sam Rivera"
+m026,Academic,rag,groq/qwen/qwen3.8-27b,1.0,3,0,4,,"The draft does not explicitly confirm that the team has 'seen' the email as requested ('let me know that your team has seen this'), though it implies acknowledgment. It also does not explicitly confirm that the *team* (plural) has noted the deadline, only that 'our group' has, which is acceptable bu",0,0,replies/professor.md;notes/courses.md;notes/availability.md;resume.md,"Dear Dr. Desai,
+
+Thank you for granting the extension. Our group has noted the new deadline of Friday, 30 October and will ensure the mini‑project report and demo are ready by then.
+
+We appreciate your flexibility and will keep you updated on our progress.
+
+Regards,
+Sam Rivera"
+m026,Academic,rag,groq/openai/gpt-oss-20b,0.8,5,1,5,will keep you updated on progress,team has seen this,0,0,replies/professor.md;notes/courses.md;notes/availability.md;resume.md,"Dear Dr. Desai,
+
+Thank you for granting the extension. Our group has noted the new deadline of Friday, 30 October and will ensure the mini‑project report and demo are ready by then.
+
+We appreciate your flexibility and will keep you updated on our progress.
+
+Regards,
+Sam Rivera"
+m026,Academic,no_rag,groq/qwen/qwen3.8-27b,0.25,4,3,4,The writer has shared the update with the team. | The team is aligned on having the report ready by that date. | The team is aligned on having the demo ready by that date.,"The draft claims the team has been informed and is aligned, but the context does not confirm this action has been taken. While it addresses the request to 'let me know that your team has seen this' by implying it has been done, it is a factual assertion not supported by the provided notes. However, ",0,0,,"Dear Dr. Desai,
+
+Thank you for granting us an extension until Friday, 30 October. I’ve shared the update with the team, and we’re aligned on having the report and demo ready by that date.
+
+We appreciate your flexibility and will keep you posted if any issues arise.
+
+Best regards,
+Sam Rivera"
+m026,Academic,no_rag,groq/openai/gpt-oss-20b,0.2,5,4,5,I’ve shared the update with the team | we’re aligned on having the report and demo ready by that date | We appreciate your flexibility | will keep you posted if any issues arise,,0,0,,"Dear Dr. Desai,
+
+Thank you for granting us an extension until Friday, 30 October. I’ve shared the update with the team, and we’re aligned on having the report and demo ready by that date.
+
+We appreciate your flexibility and will keep you posted if any issues arise.
+
+Best regards,
+Sam Rivera"
+m038,Project,rag,groq/qwen/qwen3.8-27b,1.0,5,0,5,,,0,0,notes/project_mailpilot.md;notes/availability.md;resume.md;replies/teammate.md,"Hey Kabir,
+
+Got the update – thanks for getting the backend up on Render. I’ll dive into the CORS issue on the frontend right away so we’re ready for the demo on Saturday, 24 Oct. Could you share the exact Render URL (or any custom headers you expect) so I can whitelist it correctly?
+
+I’ll aim to have a fix pushed before the weekend. Let me know if there’s anything else you need from my side.
+
+Best,
+Sam Rivera"
+m038,Project,no_rag,groq/qwen/qwen3.8-27b,0.8,5,1,5,The writer (Sam) will let Kabir know once the fix is in place or if issues arise.,,0,0,,"Hi Kabir,
+
+Thanks for the update on the backend deployment. I’ll take a look at the CORS configuration on the frontend and make sure it’s resolved before the demo on Saturday, 24 October. I’ll let you know once the fix is in place or if I run into any issues.
+
+Best regards,
+Sam Rivera"
+m020,HR/Recruiter,rag,groq/openai/gpt-oss-20b,0.333,3,2,5,I’m available on Wednesday between 10 AM and 1 PM. | 11 AM works well for me.,,1,1,notes/availability.md;replies/interview_slot.md;replies/recruiter_followup.md;notes/fabrikam_thread.md,"Hi Rahul,
+
+Thanks for the update—glad to hear I cleared the first round. I’m available on Wednesday between 10 AM and 1 PM; [confirm: 11 AM] works well for me. Please let me know the preferred platform (Google Meet or Zoom) and any details I should prepare.
+
+Looking forward to the conversation.
+
+Best regards,
+Sam Rivera"
+m020,HR/Recruiter,no_rag,groq/qwen/qwen3.8-27b,1.0,4,0,5,,,1,1,,"Hi Rahul,
+
+Thank you for the update—I'm glad to hear I cleared the first round. I’m available for the final HR interview on Wednesday next week and can meet at [confirm: 10:30 AM] (or any time between 10 AM and 1 PM). Please let me know if that works for you.
+
+Best regards,
+Sam Rivera"
+m015,HR/Recruiter,rag,groq/qwen/qwen3.8-27b,0.75,4,1,4,The writer will review the offer letter carefully.,,0,0,notes/job_preferences.md;resume.md;notes/documents.md;replies/interview_slot.md,"Dear Litware HR,
+
+Thank you for extending the offer for the Associate Software Engineer role and for sharing the offer letter. I have received the document and will review it carefully. I will get back to you with my decision by the 30 October 2026 deadline.
+
+Looking forward to the possibility of joining the team.
+
+Best regards,
+Sam Rivera"
+m015,HR/Recruiter,rag,groq/openai/gpt-oss-20b,0.667,6,2,4,I will review it carefully | I am looking forward to the possibility of joining the team,I will sign and return the offer letter / I will accept the offer,0,0,notes/job_preferences.md;resume.md;notes/documents.md;replies/interview_slot.md,"Dear Litware HR,
+
+Thank you for extending the offer for the Associate Software Engineer role and for sharing the offer letter. I have received the document and will review it carefully. I will get back to you with my decision by the 30 October 2026 deadline.
+
+Looking forward to the possibility of joining the team.
+
+Best regards,
+Sam Rivera"
+m015,HR/Recruiter,no_rag,groq/qwen/qwen3.8-27b,0.5,6,3,3,The writer will review the offer letter promptly. | The writer will sign and return the document by 30 October 2026. | The writer is looking forward to joining the team.,"The draft falsely claims the writer will sign and return the offer by the deadline, whereas the context states the writer has not accepted the offer yet and is still deciding. It also fails to address the discrepancy between the offered joining date (15 July 2027) and the writer's stated availabilit",0,0,,"Dear Litware HR,
+
+Thank you for extending the offer for the Associate Software Engineer role. I have received the offer letter and will review it promptly. I will sign and return the document by 30 October 2026 as requested.
+
+Please let me know if there are any additional forms or information you need from me before the tentative start date of 15 July 2027.
+
+Looking forward to joining the team.
+
+Sam Rivera"
+m037,Project,rag,groq/qwen/qwen3.8-27b,0.667,3,1,4,The writer will let Ananya know tonight once the work is underway.,"The draft commits to a specific update time ('tonight') that is not explicitly requested or supported by the context, whereas the incoming email only asked for confirmation of the task assignment by tonight. While the confirmation is provided, the added commitment to update 'tonight' is an unsupport",0,0,notes/research.md;notes/availability.md;resume.md;replies/teammate.md,"Hi Ananya,
+
+Thanks for the note. I can take columns J to R and will have them cleaned well before the lab meeting on Thursday, 22 October. I’ll let you know tonight once the work is underway.
+
+Looking forward to getting this done.
+
+Best regards,
+Sam Rivera"
+m037,Project,rag,groq/openai/gpt-oss-20b,0.75,4,1,5,I am looking forward to getting this done,,0,0,notes/research.md;notes/availability.md;resume.md;replies/teammate.md,"Hi Ananya,
+
+Thanks for the note. I can take columns J to R and will have them cleaned well before the lab meeting on Thursday, 22 October. I’ll let you know tonight once the work is underway.
+
+Looking forward to getting this done.
+
+Best regards,
+Sam Rivera"
+m037,Project,no_rag,groq/qwen/qwen3.8-27b,0.5,4,2,4,The writer will let Ananya know once the work is completed. | The writer is asking for specific cleaning guidelines or formats.,"The draft does not explicitly confirm availability by 'tonight' as requested, though it implies immediate acceptance. It also adds a question about guidelines which was not asked for, but this is minor. The main gap is the lack of explicit confirmation of the deadline for the reply itself ('by tonig",0,0,,"Hi Ananya,
+
+Thanks for the details. I can take care of cleaning columns J to R and will have them ready before the lab meeting on Thursday, 22 October. I’ll let you know once the work is completed.
+
+Please let me know if there are any specific cleaning guidelines or formats you’d like me to follow.
+
+Best regards,
+Sam Rivera"
+m003,Placement,rag,groq/qwen/qwen3.8-27b,1.0,4,0,5,,,0,0,notes/placement_status.md;replies/placement_cell.md;notes/availability.md;resume.md,"Dear Placement Officer,
+
+Thank you for the update. I confirm my participation in the Fabrikam online assessment scheduled for next Monday between 2 PM and 6 PM. I will keep an eye on my registered email for the test link.
+
+Looking forward to the assessment.
+
+Best regards,
+Sam Rivera"
+m003,Placement,no_rag,groq/qwen/qwen3.8-27b,1.0,2,0,5,,,0,0,,"Dear Placement Officer,
+
+Thank you for the good news. I’m pleased to confirm my participation in the Fabrikam online assessment. I will be ready to take the test during the scheduled window on Monday from 2 PM to 6 PM.
+
+Please let me know if there’s anything else I should prepare in advance.
+
+Best regards,
+Sam Rivera"
+m014,HR/Recruiter,rag,groq/qwen/qwen3.8-27b,1.0,3,0,5,,,0,0,notes/fabrikam_thread.md;notes/job_preferences.md;replies/recruiter_followup.md;replies/interview_slot.md,"Hi Rahul,
+
+Thanks for checking in. I’m still very interested in the Data Engineer Intern role. I can start in January 2027, and I’m happy to relocate to Pune for the internship.
+
+Please let me know the next steps or any additional information you need from me.
+
+Best regards,
+Sam Rivera"
+m014,HR/Recruiter,no_rag,groq/qwen/qwen3.8-27b,1.0,1,0,2,,"The draft fails to provide the specific expected start date (January 2027) and does not explicitly confirm openness to relocating to Pune, instead using unfilled placeholders that do not answer the recruiter's direct questions.",0,3,,"Hi Rahul,
+
+Thank you for reaching out. I remain very interested in the Data Engineer Intern role at Fabrikam.
+
+My expected start date would be [expected start date]. I am [open to relocating to Pune / not open to relocating] – please see my preference below: [relocation preference].
+
+Let me know if you need any additional information. I look forward to the next steps.
+
+Best regards,
+Sam Rivera"
+m006,Placement,rag,groq/qwen/qwen3.8-27b,1.0,2,0,5,,,0,0,notes/availability.md;resume.md;notes/placement_status.md;resume.md,"Hi Career Development Cell,
+
+Thank you for arranging the mock interview sessions. I would like to confirm the slot on 26 Oct from 10 AM to 12 PM.
+
+Looking forward to the interview.
+
+Best regards,
+Sam Rivera"
+m006,Placement,no_rag,groq/qwen/qwen3.8-27b,1.0,2,0,5,,,0,0,,"Hello,
+
+I would like to reserve the mock interview slot on 26 Oct from 10 AM to 12 PM.
+
+Thank you for coordinating this opportunity.
+
+Best regards,
+Sam Rivera"
+m039,Project,rag,groq/qwen/qwen3.8-27b,0.75,4,1,4,The writer will notify the maintainers once the PR is updated.,"The draft does not explicitly confirm the timeline or feasibility of including the changes in the v2.3 release, though it implies compliance with the request.",0,0,resume.md;notes/project_mailpilot.md;replies/teammate.md;resume.md,"Hi openkit maintainers,
+
+Thanks for the review. I’ll add unit tests for the empty‑input edge case and rebase the PR onto main. I’ll let you know once it’s updated.
+
+Best regards,
+Sam Rivera"
+m039,Project,no_rag,groq/qwen/qwen3.8-27b,0.75,4,1,5,The writer will push the updated changes shortly.,,0,0,,"Hi OpenKit team,
+
+Thanks for the quick review! I’ll add unit tests covering the empty‑input edge case and rebase the branch onto the latest main as requested. Please let me know if there are any particular testing conventions or frameworks you’d like me to follow.
+
+I’ll push the updated changes shortly so they can be included in the v2.3 release.
+
+Best regards,
+Sam Rivera"
+m032,Academic,rag,groq/qwen/qwen3.8-27b,1.0,3,0,5,,,1,1,replies/professor.md;notes/courses.md;notes/availability.md;resume.md,"Dear Dr. Kulkarni,
+
+Thank you for the information. We will submit the one‑page progress report by [confirm: 27 October] as requested. Our group prefers an afternoon slot for the review on 29 October.
+
+Regards,
+Sam Rivera"
+m032,Academic,no_rag,groq/qwen/qwen3.8-27b,1.0,3,0,3,,"The draft fails to specify the actual slot preference (afternoon), leaving it as a placeholder [morning/afternoon] despite the context explicitly stating the group prefers afternoon slots.",1,2,,"Dear Dr. Kulkarni,
+
+Thank you for the information. I will ensure our one‑page progress report is submitted by [confirm: 27 October], two days before the review. Regarding the slot, our group would like to request a [morning/afternoon] preference.
+
+Please let me know if there are any additional details you need.
+
+Best regards,
+Sam Rivera"
+m042,Project,rag,groq/qwen/qwen3.8-27b,0.167,6,5,3,The writer has taken a look at the Figma file. | The five-tab layout works well with the current design direction. | The spacing and icons look clean. | The writer will run the frontend prototype against the mockup later today. | The writer will let Kabir know if they spot any alignment issues.,"The draft does not explicitly answer the question 'Thoughts?' with specific feedback on the UI design (other than generic praise), nor does it address the known CORS issue mentioned in the context which is relevant to the frontend/API integration.",0,0,notes/project_mailpilot.md;resume.md;notes/research.md;replies/teammate.md,"Hi Kabir,
+
+Thanks for sharing the Figma file. I’ve taken a look and the five‑tab layout works well with our current design direction. The spacing and icons look clean, and it should map nicely to the API client I’m handling.
+
+I’ll run the frontend prototype against the mockup later today and let you know if I spot any alignment issues. If there are any specific interactions you’d like me to test, just drop a note.
+
+Looking forward to the next steps.
+
+Best regards,
+Sam Rivera"
+m042,Project,no_rag,groq/qwen/qwen3.8-27b,0.0,4,4,4,The writer has taken a look at the popup UI. | The writer has taken a look at the five-tab layout. | The structure feels clean. | The separation into tabs should help users find what they need quickly.,"The draft claims to have reviewed the Figma file, which is not supported by the context (the writer's notes do not indicate they have seen the file yet). However, it does answer the question 'Thoughts?' with specific suggestions.",0,0,,"Hi Kabir,
+
+Thanks for sharing the Figma file. I’ve taken a look at the popup UI and the five‑tab layout you’ve chosen. The structure feels clean and the separation into tabs should help users find what they need quickly. A couple of quick thoughts:
+- Consider the order of the tabs to prioritize the most frequently used actions.
+- A brief hover tooltip on each tab could clarify their purpose.
+Let me know if you’d like to discuss any of these points further.
+
+Best,
+Sam Rivera"

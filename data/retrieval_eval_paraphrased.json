@@ -1,0 +1,20 @@
+[
+  {"query": "Would you be willing to move cities for this job, and from which month could you join full time?", "relevant": ["notes/job_preferences.md"]},
+  {"query": "Which afternoons next week suit you for a chat with our engineering panel?", "relevant": ["notes/availability.md"]},
+  {"query": "We need proof of identity and your academic transcripts to complete onboarding.", "relevant": ["notes/documents.md"]},
+  {"query": "Is a short phone conversation with our hiring team possible in the coming days?", "relevant": ["notes/availability.md", "notes/job_preferences.md"]},
+  {"query": "Have you committed to any company yet, and by when must you decide?", "relevant": ["notes/job_preferences.md", "notes/placement_status.md"]},
+  {"query": "Which recruiters coming to campus have you signed up with?", "relevant": ["notes/placement_status.md"]},
+  {"query": "If you say yes to one company, can you still sit for others?", "relevant": ["notes/placement_status.md"]},
+  {"query": "Does your team prefer to present before or after lunch?", "relevant": ["notes/courses.md"]},
+  {"query": "How far along is the library system write-up for the database course?", "relevant": ["notes/courses.md"]},
+  {"query": "When could your hackathon group meet our advisor online?", "relevant": ["notes/project_mailpilot.md"]},
+  {"query": "The web client cannot reach the hosted server because of a cross-origin problem, can you look at it?", "relevant": ["notes/project_mailpilot.md"]},
+  {"query": "Could you handle half of the questionnaire responses before the professor's group meeting?", "relevant": ["notes/research.md"]},
+  {"query": "Describe something you built that lets people find information quickly.", "relevant": ["resume.md", "notes/project_mailpilot.md"]},
+  {"query": "What is your grade point average and are any subjects pending clearance?", "relevant": ["resume.md"]},
+  {"query": "Tell us about your summer work experience at a company.", "relevant": ["resume.md"]},
+  {"query": "Will you be home for the weekend meal with family?", "relevant": ["notes/personal.md"]},
+  {"query": "Can you come to our office for an in-person round in early November?", "relevant": ["notes/availability.md"]},
+  {"query": "How long an industry placement can you take during your last semester, and starting when?", "relevant": ["notes/job_preferences.md"]}
+]

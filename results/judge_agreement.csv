@@ -1,0 +1,3 @@
+metric,judge_a,judge_b,drafts,spearman,mean_abs_diff
+faithfulness,groq/qwen/qwen3.8-27b,groq/openai/gpt-oss-20b,27,0.381,0.249
+helpfulness,groq/qwen/qwen3.8-27b,groq/openai/gpt-oss-20b,27,0.545,0.963

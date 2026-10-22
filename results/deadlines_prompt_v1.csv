@@ -1,0 +1,4 @@
+model,mails,gold,predicted,correct,precision,recall,f1,failed_calls
+groq/openai/gpt-oss-120b,61,50,62,48,0.774,0.96,0.857,0
+groq/openai/gpt-oss-20b,61,50,62,47,0.758,0.94,0.839,0
+groq/qwen/qwen3.8-27b,61,50,57,48,0.842,0.96,0.897,0

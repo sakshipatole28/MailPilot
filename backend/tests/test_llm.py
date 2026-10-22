@@ -54,6 +54,23 @@ def test_complete_retries_rate_limits(monkeypatch, fake_llm):
     assert calls["n"] == 2
 
 
+def test_complete_retries_empty_replies(fake_llm):
+    replies = iter(["", "ok"])
+    fake_llm.reply = lambda prompt: next(replies)
+    assert complete("empty first", OPTS) == "ok"
+    assert len(fake_llm.calls) == 2
+
+
+def test_parse_json_allows_raw_newlines_in_strings():
+    assert parse_json('{"body": "line one\nline two"}') == {"body": "line one\nline two"}
+
+
+def test_complete_json_asks_again_after_bad_json(fake_llm):
+    from app.llm.client import complete_json
+    fake_llm.reply = lambda prompt: '{"a": 1}' if "not valid JSON" in prompt else '{"a": oops}'
+    assert complete_json("give json", OPTS) == {"a": 1}
+
+
 def test_complete_does_not_retry_auth_errors(monkeypatch):
     calls = {"n": 0}
 
@@ -115,6 +132,15 @@ def test_relative_dates_get_received_date_in_prompt(fake_llm):
     extract_deadlines(make_mail(), OPTS)
     prompt = fake_llm.calls[0]["messages"][0]["content"]
     assert "2026-10-20T14:30:00+05:30 (Tuesday)" in prompt
+    assert "Tue 20 Oct 2026 (received)" in prompt and "Sun 25 Oct 2026" in prompt
+
+
+def test_same_date_items_are_merged(fake_llm):
+    fake_llm.reply = as_json({"deadlines": [
+        {"title": "Submit report", "due_iso": "2026-10-30T23:59:00+05:30", "evidence": "tomorrow EOD"},
+        {"title": "Prepare demo", "due_iso": "2026-10-30T23:59:00+05:30", "evidence": "tomorrow EOD"},
+    ]})
+    assert [d.title for d in extract_deadlines(make_mail(), OPTS)] == ["Submit report"]
 
 
 def test_evidence_matching_tolerates_small_rewording():
