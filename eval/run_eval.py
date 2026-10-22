@@ -1,13 +1,24 @@
-"""Evaluate MailPilot on data/sample_mails.json and data/retrieval_eval.json.
+"""Evaluate MailPilot on the labeled data in data/. Writes CSVs and results/summary.md.
 
-Writes CSVs and results/summary.md. Every number in the README must come from here.
+Every number in the README must come from here.
 
     cd backend
-    .venv/bin/python ../eval/run_eval.py                                 # retrieval + keyword baseline
-    .venv/bin/python ../eval/run_eval.py --models gemini/gemini-2.5-flash groq/llama-3.3-70b-versatile
-    .venv/bin/python ../eval/run_eval.py --models ollama/qwen2.5:7b --skip-drafts
+    .venv/bin/python ../eval/run_eval.py                       # retrieval + keyword baseline only
+    .venv/bin/python ../eval/run_eval.py \
+        --models groq/openai/gpt-oss-120b groq/openai/gpt-oss-20b groq/qwen/qwen3.8-27b \
+        --draft-model groq/openai/gpt-oss-120b \
+        --judges groq/qwen/qwen3.8-27b groq/openai/gpt-oss-20b
 
-LLM responses are cached in SQLite, so re-runs are free. Use --sleep on free tiers.
+Draft quality is judged automatically, following published LLM-as-judge practice:
+- claim-level faithfulness: the judge lists the draft's atomic claims and marks each as supported
+  or not by the mail + context (RAGAS, Es et al. 2024; FActScore, Min et al. 2023)
+- a rubric helpfulness score with written criteria per level (G-Eval, Liu et al. 2023)
+- the primary judge comes from a different model family than the draft writer, because judges
+  favor their own generations (Panickssery et al. 2024)
+- pairwise RAG vs no-RAG, judged in both orders; a win must survive the swap (Zheng et al. 2023)
+- a second judge, reporting agreement between judges as a check on the first
+
+LLM responses are cached in SQLite, so an interrupted run resumes for free.
 """
 import argparse
 import csv
@@ -15,24 +26,26 @@ import json
 import statistics
 import sys
 import time
-from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
+sys.path.insert(0, str(ROOT / "eval"))
 
+from scipy.stats import spearmanr  # noqa: E402
 from sklearn.metrics import accuracy_score, f1_score  # noqa: E402
 
 from app import db  # noqa: E402
 from app.config import DEFAULT_CATEGORIES, settings  # noqa: E402
 from app.deps import get_retriever  # noqa: E402
 from app.llm.classifier import keyword_classify, llm_classify  # noqa: E402
-from app.llm.client import LLMError, complete, parse_json, render_prompt  # noqa: E402
+from app.llm.client import LLMError, complete_json, render_prompt  # noqa: E402
 from app.llm.deadlines import extract_deadlines  # noqa: E402
 from app.llm.generator import draft_reply, format_context  # noqa: E402
 from app.mail_sources.file_source import FileMailSource  # noqa: E402
 from app.models import LLMOptions  # noqa: E402
+from metrics import claim_faithfulness, deadline_matches, pairwise_outcome  # noqa: E402
 
 RESULTS = ROOT / "results"
 KS = (1, 3, 5)
@@ -56,96 +69,33 @@ def md_table(rows: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def mean(values) -> float | str:
+    values = list(values)
+    return round(statistics.mean(values), 3) if values else "n/a"
+
+
 def load_data():
     labels = {r["id"]: r["label"] for r in json.loads((ROOT / "data/sample_mails.json").read_text())}
     mails = FileMailSource(ROOT / "data/sample_mails.json").fetch()
     return mails, labels
 
 
-# ---------------- classification ----------------
-
-def eval_classification(mails, labels, models, pause) -> list[dict]:
-    rows = []
-    for name in ["keywords"] + models:
-        y_true, y_pred, reply_true, reply_pred, failed = [], [], [], [], 0
-        for mail in mails:
-            try:
-                if name == "keywords":
-                    result = keyword_classify(mail, DEFAULT_CATEGORIES)
-                else:
-                    result = llm_classify(mail, LLMOptions(model=name), DEFAULT_CATEGORIES)
-                    time.sleep(pause)
-            except LLMError as e:
-                failed += 1
-                if failed == 1 and not y_pred:
-                    print(f"  {name}: skipped ({e})")
-                    break
-                continue
-            y_true.append(labels[mail.id]["category"])
-            y_pred.append(result.category)
-            reply_true.append(labels[mail.id]["needs_reply"])
-            reply_pred.append(result.needs_reply)
-        if not y_pred:
-            rows.append({"model": name, "n": 0, "accuracy": "skipped", "macro_f1": "skipped",
-                         "needs_reply_acc": "skipped", "failed_calls": failed})
-            continue
-        rows.append({
-            "model": name,
-            "n": len(y_pred),
-            "accuracy": round(accuracy_score(y_true, y_pred), 3),
-            "macro_f1": round(f1_score(y_true, y_pred, labels=DEFAULT_CATEGORIES,
-                                       average="macro", zero_division=0), 3),
-            "needs_reply_acc": round(accuracy_score(reply_true, reply_pred), 3),
-            "failed_calls": failed,
-        })
-        print(f"  classification {name}: {rows[-1]}")
-    return rows
-
-
-# ---------------- deadlines ----------------
-
-def eval_deadlines(mails, labels, models, pause) -> list[dict]:
-    """A predicted deadline is correct if its date matches a gold date of the same mail
-    (each gold date can be matched once)."""
-    rows = []
-    for name in models:
-        tp = n_pred = n_gold = failed = 0
-        done = 0
-        for mail in mails:
-            try:
-                predicted = extract_deadlines(mail, LLMOptions(model=name))
-                time.sleep(pause)
-            except LLMError as e:
-                failed += 1
-                if done == 0:
-                    print(f"  {name}: skipped ({e})")
-                    break
-                continue
-            done += 1
-            gold = Counter(d["due_date"] for d in labels[mail.id]["deadlines"])
-            pred = Counter(d.due_iso[:10] for d in predicted)
-            tp += sum((gold & pred).values())
-            n_pred += sum(pred.values())
-            n_gold += sum(gold.values())
-        if done == 0:
-            rows.append({"model": name, "mails": 0, "precision": "skipped", "recall": "skipped",
-                         "f1": "skipped", "failed_calls": failed})
-            continue
-        p = tp / n_pred if n_pred else 0.0
-        r = tp / n_gold if n_gold else 0.0
-        rows.append({"model": name, "mails": done, "gold": n_gold, "predicted": n_pred,
-                     "precision": round(p, 3), "recall": round(r, 3),
-                     "f1": round(2 * p * r / (p + r), 3) if p + r else 0.0,
-                     "failed_calls": failed})
-        print(f"  deadlines {name}: {rows[-1]}")
-    return rows
+def call(fn, pause):
+    """Run one LLM-backed call; return None (and print why) if it fails after retries."""
+    try:
+        result = fn()
+        time.sleep(pause)
+        return result
+    except LLMError as e:
+        print(f"    failed: {e}")
+        return None
 
 
 # ---------------- retrieval ----------------
 
-def eval_retrieval() -> list[dict]:
-    """Doc-level recall@k: share of a query's relevant files that appear in the top-k chunks."""
-    queries = json.loads((ROOT / "data/retrieval_eval.json").read_text())
+def eval_retrieval(query_file: str) -> list[dict]:
+    """Doc-level recall@k: share of a query's relevant files found in the top-k chunks."""
+    queries = json.loads((ROOT / "data" / query_file).read_text())
     retriever = get_retriever()
     rows = []
     for mode in ("hybrid", "vector", "bm25"):
@@ -158,113 +108,205 @@ def eval_retrieval() -> list[dict]:
                 recalls[k].append(len(relevant & set(hits[:k])) / len(relevant))
             first = next((i for i, s in enumerate(hits, 1) if s in relevant), None)
             rr.append(1 / first if first else 0.0)
-        row = {"mode": mode, "queries": len(queries)}
-        row.update({f"recall@{k}": round(statistics.mean(recalls[k]), 3) for k in KS})
-        row["mrr"] = round(statistics.mean(rr), 3)
+        row = {"query_set": query_file.removesuffix(".json"), "mode": mode, "queries": len(queries)}
+        row.update({f"recall@{k}": mean(recalls[k]) for k in KS})
+        row["mrr"] = mean(rr)
         rows.append(row)
-        print(f"  retrieval {mode}: {row}")
+        print(f"  {row}")
+    return rows
+
+
+# ---------------- classification ----------------
+
+def eval_classification(mails, labels, models, pause) -> list[dict]:
+    rows = []
+    for name in ["keywords"] + models:
+        y_true, y_pred, reply_true, reply_pred, failed = [], [], [], [], 0
+        for mail in mails:
+            if name == "keywords":
+                result = keyword_classify(mail, DEFAULT_CATEGORIES)
+            else:
+                result = call(lambda: llm_classify(mail, LLMOptions(model=name),
+                                                   DEFAULT_CATEGORIES), pause)
+            if result is None:
+                failed += 1
+                continue
+            y_true.append(labels[mail.id]["category"])
+            y_pred.append(result.category)
+            reply_true.append(labels[mail.id]["needs_reply"])
+            reply_pred.append(result.needs_reply)
+        rows.append({
+            "model": name,
+            "mails": len(y_pred),
+            "accuracy": round(accuracy_score(y_true, y_pred), 3) if y_pred else "n/a",
+            "macro_f1": round(f1_score(y_true, y_pred, labels=DEFAULT_CATEGORIES,
+                                       average="macro", zero_division=0), 3) if y_pred else "n/a",
+            "needs_reply_acc": round(accuracy_score(reply_true, reply_pred), 3) if y_pred else "n/a",
+            "failed_calls": failed,
+        })
+        print(f"  {rows[-1]}")
+    return rows
+
+
+# ---------------- deadlines ----------------
+
+def eval_deadlines(mails, labels, models, pause) -> list[dict]:
+    """A predicted deadline is correct if its date matches a gold date of the same mail."""
+    rows = []
+    for name in models:
+        tp = n_pred = n_gold = failed = done = 0
+        for mail in mails:
+            predicted = call(lambda: extract_deadlines(mail, LLMOptions(model=name)), pause)
+            if predicted is None:
+                failed += 1
+                continue
+            done += 1
+            gold = [d["due_date"] for d in labels[mail.id]["deadlines"]]
+            pred = [d.due_iso[:10] for d in predicted]
+            tp += deadline_matches(gold, pred)
+            n_pred += len(pred)
+            n_gold += len(gold)
+        p = tp / n_pred if n_pred else 0.0
+        r = tp / n_gold if n_gold else 0.0
+        rows.append({"model": name, "mails": done, "gold": n_gold, "predicted": n_pred,
+                     "correct": tp, "precision": round(p, 3), "recall": round(r, 3),
+                     "f1": round(2 * p * r / (p + r), 3) if p + r else 0.0,
+                     "failed_calls": failed})
+        print(f"  {rows[-1]}")
     return rows
 
 
 # ---------------- reply drafts ----------------
 
-def judge(draft_body: str, mail, chunks, judge_model: str) -> dict:
+def judge_draft(draft: str, mail, chunks, judge_model: str) -> dict:
     prompt = render_prompt("judge", context=format_context(chunks), subject=mail.subject,
-                           body=mail.body, draft=draft_body)
-    data = parse_json(complete(prompt, LLMOptions(model=judge_model)))
-    return {"faithfulness": int(data.get("faithfulness", 0)),
-            "helpfulness": int(data.get("helpfulness", 0))}
+                           body=mail.body, draft=draft)
+    data = complete_json(prompt, LLMOptions(model=judge_model))
+    claims = [c for c in data.get("claims", [])
+              if isinstance(c, dict) and "[" not in str(c.get("claim", ""))]
+    faithfulness, supported, total = claim_faithfulness(claims)
+    unsupported = [c.get("claim", "") for c in claims
+                   if c.get("supported") not in (True, "true", "True")]
+    return {"faithfulness": round(faithfulness, 3), "claims": total,
+            "unsupported_claims": total - supported,
+            "helpfulness": int(data.get("helpfulness", 0)),
+            "unsupported": " | ".join(unsupported)[:500],
+            "missing": str(data.get("missing", ""))[:300]}
 
 
-def eval_drafts(mails, labels, models, judge_model, limit, pause):
+def judge_pair(rag: str, no_rag: str, mail, chunks, judge_model: str) -> str:
+    def ask(a: str, b: str) -> str:
+        prompt = render_prompt("pairwise", context=format_context(chunks), subject=mail.subject,
+                               body=mail.body, draft_a=a, draft_b=b)
+        return str(complete_json(prompt, LLMOptions(model=judge_model)).get("winner", "tie"))
+
+    return pairwise_outcome(ask(rag, no_rag), ask(no_rag, rag))
+
+
+def eval_drafts(mails, labels, draft_model, judges, pause, second_judge_limit=None, limit=None):
     to_reply = [m for m in mails if labels[m.id]["needs_reply"]][:limit]
     retriever = get_retriever()
-    summary, detail = [], []
-    for name in models:
-        opts = LLMOptions(model=name)
-        scores = {"rag": [], "no_rag": []}
-        issues = {"rag": 0, "no_rag": 0}
-        try:
-            for mail in to_reply:
-                category = labels[mail.id]["category"]
-                query = f"{mail.subject}\n{mail.body[:1000]}"
-                for cond in ("rag", "no_rag"):
-                    chunks, style = [], []
-                    if cond == "rag":
-                        chunks = retriever.search(query, k=settings.top_k, category=category,
-                                                  contact=mail.sender)
-                        style = retriever.search(query, k=2, contact=mail.sender, doc_type="reply")
-                    email = draft_reply(mail, chunks, style, settings.tone, settings.user_name,
-                                        "", opts)
-                    # The judge sees the same full context for both conditions, so a no-RAG draft
-                    # is not penalized for facts it could not know, only for invented ones.
-                    judge_chunks = chunks or retriever.search(query, k=settings.top_k,
-                                                              category=category,
-                                                              contact=mail.sender)
-                    grade = judge(email.body, mail, judge_chunks, judge_model)
-                    time.sleep(pause)
-                    scores[cond].append(grade)
-                    issues[cond] += len(email.issues)
-                    detail.append({"model": name, "mail_id": mail.id, "condition": cond,
-                                   **grade, "guardrail_issues": len(email.issues),
-                                   "sources": ";".join(c.source for c in chunks),
-                                   "draft": email.body})
-        except LLMError as e:
-            print(f"  drafts {name}: stopped ({e})")
+    opts = LLMOptions(model=draft_model)
+    detail, pairs = [], []
+
+    for n, mail in enumerate(to_reply, 1):
+        print(f"  draft {n}/{len(to_reply)} {mail.id}")
+        category = labels[mail.id]["category"]
+        query = f"{mail.subject}\n{mail.body[:1000]}"
+        chunks = retriever.search(query, k=settings.top_k, category=category, contact=mail.sender)
+        style = retriever.search(query, k=2, contact=mail.sender, doc_type="reply")
+        drafts = {
+            "rag": call(lambda: draft_reply(mail, chunks, style, settings.tone, settings.user_name,
+                                            "", opts), pause),
+            "no_rag": call(lambda: draft_reply(mail, [], [], settings.tone, settings.user_name,
+                                               "", opts), pause),
+        }
+        # Judges see the same notes for both conditions: a no-RAG draft is not punished for
+        # lacking facts, only for inventing them.
+        for cond, email in drafts.items():
+            if email is None:
+                continue
+            for i, judge in enumerate(judges):
+                if i > 0 and second_judge_limit is not None and n > second_judge_limit:
+                    continue
+                grade = call(lambda: judge_draft(email.body, mail, chunks, judge), pause)
+                if grade is None:
+                    continue
+                detail.append({"mail_id": mail.id, "category": category, "condition": cond,
+                               "judge": judge, **grade,
+                               "guardrail_flags": len(email.issues),
+                               "placeholders": email.body.count("["),
+                               "sources": ";".join(c.source for c in (chunks if cond == "rag" else [])),
+                               "draft": email.body})
+        if judges and drafts["rag"] and drafts["no_rag"]:
+            outcome = call(lambda: judge_pair(drafts["rag"].body, drafts["no_rag"].body, mail,
+                                              chunks, judges[0]), pause)
+            if outcome:
+                pairs.append({"mail_id": mail.id, "judge": judges[0], "outcome": outcome})
+
+    summary = []
+    for judge in judges:
         for cond in ("rag", "no_rag"):
-            graded = scores[cond]
+            rows = [d for d in detail if d["judge"] == judge and d["condition"] == cond]
             summary.append({
-                "model": name, "condition": cond, "drafts": len(graded), "judge": judge_model,
-                "faithfulness": round(statistics.mean(g["faithfulness"] for g in graded), 2)
-                if graded else "skipped",
-                "helpfulness": round(statistics.mean(g["helpfulness"] for g in graded), 2)
-                if graded else "skipped",
-                "guardrail_issues": issues[cond],
+                "judge": judge, "condition": cond, "drafts": len(rows),
+                "faithfulness": mean(r["faithfulness"] for r in rows),
+                "unsupported_claims_per_draft": mean(r["unsupported_claims"] for r in rows),
+                "helpfulness_1to5": mean(r["helpfulness"] for r in rows),
+                "guardrail_flags_per_draft": mean(r["guardrail_flags"] for r in rows),
             })
-            print(f"  drafts {name}/{cond}: {summary[-1]}")
-    return summary, detail
+            print(f"  {summary[-1]}")
 
+    pairwise = []
+    if pairs:
+        counts = {k: sum(p["outcome"] == k for p in pairs) for k in ("rag", "no_rag", "tie")}
+        pairwise.append({"judge": judges[0], "mails": len(pairs), "rag_wins": counts["rag"],
+                         "no_rag_wins": counts["no_rag"], "ties_or_order_flips": counts["tie"]})
+        print(f"  {pairwise[-1]}")
 
-def manual_summary() -> list[dict]:
-    """Average manual 1-5 ratings from results/manual_ratings.csv (filled in by hand)."""
-    path = RESULTS / "manual_ratings.csv"
-    if not path.exists():
-        return []
-    rows = [r for r in csv.DictReader(open(path, encoding="utf-8")) if r.get("rating", "").strip()]
-    out = []
-    for key in sorted({(r["model"], r["condition"]) for r in rows}):
-        ratings = [int(r["rating"]) for r in rows if (r["model"], r["condition"]) == key]
-        out.append({"model": key[0], "condition": key[1], "rated": len(ratings),
-                    "mean_rating": round(statistics.mean(ratings), 2)})
-    return out
-
-
-def write_manual_template(detail: list[dict], n: int = 10) -> None:
-    path = RESULTS / "manual_ratings.csv"
-    if path.exists() or not detail:
-        return  # never overwrite ratings someone already typed in
-    rows = [{"model": d["model"], "mail_id": d["mail_id"], "condition": d["condition"],
-             "rating": "", "draft": d["draft"]} for d in detail[: n * 2]]
-    write_csv("manual_ratings.csv", rows)
+    agreement = []
+    if len(judges) >= 2:
+        a, b = judges[0], judges[1]
+        key = lambda d: (d["mail_id"], d["condition"])  # noqa: E731
+        first = {key(d): d for d in detail if d["judge"] == a}
+        second = {key(d): d for d in detail if d["judge"] == b}
+        shared = sorted(set(first) & set(second))
+        for metric in ("faithfulness", "helpfulness"):
+            x = [first[k][metric] for k in shared]
+            y = [second[k][metric] for k in shared]
+            rho = spearmanr(x, y).statistic if len(shared) > 2 and len(set(x)) > 1 and len(set(y)) > 1 else float("nan")
+            agreement.append({"metric": metric, "judge_a": a, "judge_b": b, "drafts": len(shared),
+                              "spearman": round(float(rho), 3),
+                              "mean_abs_diff": mean(abs(i - j) for i, j in zip(x, y))})
+            print(f"  {agreement[-1]}")
+    return summary, detail, pairs, pairwise, agreement
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--models", nargs="*", default=[], help="LiteLLM model names")
-    parser.add_argument("--judge", default=None, help="judge model (default: first --models)")
-    parser.add_argument("--draft-limit", type=int, default=25)
+    parser.add_argument("--models", nargs="*", default=[], help="models for classification + deadlines")
+    parser.add_argument("--deadline-models", nargs="*", default=None,
+                        help="models for deadline extraction (default: --models)")
+    parser.add_argument("--draft-limit", type=int, default=None,
+                        help="evaluate drafts for only the first N needs-reply mails")
+    parser.add_argument("--second-judge-limit", type=int, default=None,
+                        help="grade only the first N mails with the second judge (saves quota)")
+    parser.add_argument("--draft-model", default=None, help="writes the drafts (default: first --models)")
+    parser.add_argument("--judges", nargs="*", default=[], help="judge models; the first is primary")
     parser.add_argument("--sleep", type=float, default=0.0, help="seconds between LLM calls")
+    parser.add_argument("--retries", type=int, default=8, help="retries on rate limits")
     parser.add_argument("--skip-drafts", action="store_true")
     args = parser.parse_args()
 
+    settings.llm_retries = args.retries
     RESULTS.mkdir(exist_ok=True)
     db.init_db()
     mails, labels = load_data()
     print(f"{len(mails)} labeled mails, models: {args.models or 'none (baseline only)'}")
-
     sections = []
+
     print("retrieval")
-    retrieval = eval_retrieval()
+    retrieval = eval_retrieval("retrieval_eval.json") + eval_retrieval("retrieval_eval_paraphrased.json")
     write_csv("retrieval.csv", retrieval)
     sections.append(("Retrieval: hybrid vs vector vs BM25 (doc-level recall@k, MRR)", retrieval))
 
@@ -275,22 +317,24 @@ def main():
 
     if args.models:
         print("deadlines")
-        deadlines = eval_deadlines(mails, labels, args.models, args.sleep)
+        deadline_models = args.models if args.deadline_models is None else args.deadline_models
+        deadlines = eval_deadlines(mails, labels, deadline_models, args.sleep)
         write_csv("deadlines.csv", deadlines)
         sections.append(("Deadline extraction (date match)", deadlines))
 
-    if args.models and not args.skip_drafts:
-        print("drafts")
-        summary, detail = eval_drafts(mails, labels, args.models, args.judge or args.models[0],
-                                      args.draft_limit, args.sleep)
+    draft_model = args.draft_model or (args.models[0] if args.models else None)
+    if draft_model and args.judges and not args.skip_drafts:
+        print(f"drafts: writer {draft_model}, judges {args.judges}")
+        summary, detail, pairs, pairwise, agreement = eval_drafts(
+            mails, labels, draft_model, args.judges, args.sleep, args.second_judge_limit,
+            args.draft_limit)
         write_csv("drafts.csv", summary)
         write_csv("drafts_detail.csv", detail)
-        write_manual_template(detail)
-        sections.append(("Reply drafts: RAG vs no RAG (LLM-as-judge, 1-5)", summary))
-
-    manual = manual_summary()
-    if manual:
-        sections.append(("Reply drafts: manual rating (1-5)", manual))
+        write_csv("drafts_pairwise.csv", pairs)
+        write_csv("judge_agreement.csv", agreement)
+        sections.append((f"Reply drafts: RAG vs no RAG, written by {draft_model}", summary))
+        sections.append(("Reply drafts: pairwise preference (both orders must agree)", pairwise))
+        sections.append(("Judge agreement (Spearman, per draft)", agreement))
 
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     text = [f"# MailPilot eval results\n\nGenerated by `eval/run_eval.py` on {stamp}. "

@@ -21,4 +21,4 @@ Chrome MV3 popup + FastAPI backend that categorizes mail, extracts deadlines, dr
 - Backend dev: `cd backend && .venv/bin/uvicorn app.main:app --reload`
 - Tests: `cd backend && .venv/bin/pytest -q`
 - Extension: `cd extension && npm run build` then load `extension/dist` unpacked
-- Eval: `cd backend && .venv/bin/python ../eval/run_eval.py --models gemini/gemini-2.5-flash`
+- Eval: `cd backend && .venv/bin/python ../eval/run_eval.py --models groq/openai/gpt-oss-120b --judges groq/qwen/qwen3.8-27b` (see the docstring for the full run)

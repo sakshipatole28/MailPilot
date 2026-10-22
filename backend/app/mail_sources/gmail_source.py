@@ -1,6 +1,6 @@
 """Gmail via OAuth (installed-app flow, read-only scope).
 
-One-time setup on your machine (not inside Docker, it opens a browser):
+One-time setup on your machine (it opens a browser):
     cd backend && .venv/bin/python -m app.mail_sources.gmail_source
 This writes secrets/token.json; the backend reuses and refreshes it afterwards.
 """

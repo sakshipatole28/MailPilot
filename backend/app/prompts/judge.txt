@@ -1,9 +1,15 @@
-You grade a draft email reply written for a university student. Be strict.
+You check a draft email reply written for a university student. Be strict.
 
-faithfulness (1-5): 5 = every fact in the draft (dates, times, names, links, numbers, commitments) is supported by the incoming email or the context, or is left as a [placeholder]; 1 = it invents several facts.
-helpfulness (1-5): 5 = it answers everything the sender asked, is clear and ready to send after filling placeholders; 1 = it misses the point.
+Step 1: List every atomic factual claim the draft makes: dates, times, places, names, numbers, links, availability, documents, decisions, commitments and statements about the writer's situation. Ignore greetings, thanks, sign-offs and [bracketed placeholders]. Repeating a fact from the incoming email still counts as a claim.
+Step 2: Mark a claim "supported": true only if the INCOMING EMAIL or the CONTEXT states it or directly implies it. Otherwise false.
+Step 3: Rate helpfulness from 1 to 5:
+  5 = answers every question and request in the email; clear; ready to send once placeholders are filled
+  4 = answers nearly everything; small gaps or awkward wording
+  3 = handles the main request but misses something the sender asked
+  2 = vague, or misses most of what was asked
+  1 = does not address the email
 
-CONTEXT available to the writer:
+CONTEXT (the writer's own notes):
 $context
 
 INCOMING EMAIL
@@ -15,4 +21,4 @@ DRAFT
 $draft
 
 Return only JSON, no other text:
-{"faithfulness": 1, "helpfulness": 1, "comment": "<one sentence>"}
+{"claims": [{"claim": "...", "supported": true}], "helpfulness": 4, "missing": "<what the draft fails to answer, or empty>"}

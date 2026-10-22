@@ -1,9 +1,16 @@
-Extract every deadline or scheduled event from the email below that the student must act on or attend (submissions, registrations, interviews, exams, meetings, offer acceptance, ...).
+Extract every deadline or scheduled event from the email below that the student must act on or attend (submissions, registrations, replies, interviews, exams, meetings, offer acceptance, ...).
 
-The email was received on $received_at ($weekday). Resolve relative dates such as "tomorrow", "by Friday", "next Monday" or "within 3 days" against that date.
+The email was received on $received_at ($weekday). Resolve relative dates such as "tomorrow", "by Friday", "next Monday" or "within 3 days" against that date. Use this calendar instead of counting weekdays yourself:
+$calendar
 
 Rules:
 - Only include dates that the email states or clearly implies. Never guess a date.
+- If the email offers options to choose from (interview slots, mock interview slots), do not list each option. List only the deadline for replying with a choice, if there is one.
+- If the student must act within a window (registration, document verification), give the last day of the window, not the day it opens.
+- If an event itself lasts several days, give its first day.
+- When the email says "by" or "before" a date, use that date itself.
+- Skip promotions, discount expiries, automatic renewals and service notices (outages, maintenance): they need no action.
+- If a preparation step and the event it prepares for fall on different dates, list both.
 - due_iso: ISO 8601 date-time with the same UTC offset as the received date. If no time is given, use 23:59.
 - title: a short action, e.g. "Submit DBMS assignment 3" or "Technical interview with Northwind".
 - evidence: copy, word for word, the part of the email that states the date or time.

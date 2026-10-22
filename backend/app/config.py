@@ -13,8 +13,10 @@ load_dotenv(ROOT / ".env")
 DEFAULT_CATEGORIES = ["Placement", "HR/Recruiter", "Academic", "Project", "Other"]
 
 SUGGESTED_MODELS = [
+    "groq/openai/gpt-oss-120b",
+    "groq/openai/gpt-oss-20b",
+    "groq/qwen/qwen3.8-27b",
     "gemini/gemini-2.5-flash",
-    "groq/llama-3.3-70b-versatile",
     "ollama/qwen2.5:7b",
     "gpt-4o-mini",
     "anthropic/claude-sonnet-4-5",
@@ -24,7 +26,7 @@ SUGGESTED_MODELS = [
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
-    model: str = "gemini/gemini-2.5-flash"
+    model: str = "groq/openai/gpt-oss-120b"
     ollama_api_base: str = "http://localhost:11434"
     llm_retries: int = 3
     llm_timeout: int = 60

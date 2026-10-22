@@ -1,7 +1,7 @@
 """Mail classification: an LLM classifier and a keyword classifier (instant fallback + eval baseline)."""
 import re
 
-from app.llm.client import complete, parse_json, render_prompt
+from app.llm.client import complete_json, render_prompt
 from app.models import Classification, LLMOptions, Mail
 
 CATEGORY_DESCRIPTIONS = {
@@ -71,7 +71,7 @@ def llm_classify(mail: Mail, opts: LLMOptions, categories: list[str]) -> Classif
         "classify", categories=category_text, sender=f"{mail.sender_name} <{mail.sender}>",
         subject=mail.subject, received_at=mail.received_at.isoformat(), body=mail.body[:4000],
     )
-    data = parse_json(complete(prompt, opts))
+    data = complete_json(prompt, opts)
 
     by_lower = {c.lower(): c for c in categories}
     category = by_lower.get(str(data.get("category", "")).strip().lower(), "Other")

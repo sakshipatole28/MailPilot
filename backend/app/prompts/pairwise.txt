@@ -1,0 +1,21 @@
+Two draft replies to the same email are shown. Decide which one the student should send after filling in any [placeholders].
+
+Prefer the draft that answers what the sender asked, uses correct facts from the CONTEXT, and does not invent facts. A placeholder is better than a made-up fact. Do not prefer a draft just because it is longer.
+
+CONTEXT (the student's own notes):
+$context
+
+INCOMING EMAIL
+Subject: $subject
+
+$body
+
+DRAFT A
+$draft_a
+
+DRAFT B
+$draft_b
+
+Return only JSON, no other text:
+{"winner": "A", "reason": "<one sentence>"}
+winner must be "A", "B" or "tie".
