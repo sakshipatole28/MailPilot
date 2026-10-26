@@ -5,7 +5,7 @@ import mailbox
 from email import policy
 from pathlib import Path
 
-from app.mail_sources.base import MailSource, message_to_mail
+from app.mail_sources.base import MailSource, extract_links, message_to_mail
 from app.models import Mail
 
 
@@ -35,6 +35,9 @@ class FileMailSource(MailSource):
                 received_at=r["received_at"],
                 is_read=r.get("is_read", False),
                 replied=r.get("replied", False),
+                headers=r.get("headers", {}),
+                labels=r.get("labels", []),
+                links=extract_links(r["body"]),
             )
             for r in rows  # the "label" key (ground truth for eval) is ignored here
         ]

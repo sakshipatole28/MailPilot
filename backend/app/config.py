@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]  # repo root
 # Put provider keys (GEMINI_API_KEY, ...) into os.environ, where LiteLLM looks for them.
 load_dotenv(ROOT / ".env")
 
+# The student preset; the eval's labels use these names.
 DEFAULT_CATEGORIES = ["Placement", "HR/Recruiter", "Academic", "Project", "Other"]
 
 SUGGESTED_MODELS = [
@@ -49,6 +50,10 @@ class Settings(BaseSettings):
     user_name: str = "Sam Rivera"
     tone: str = "friendly and professional"
     local_only: bool = False
+
+    category_preset: str = "general"  # "general" or "student" (see app/llm/taxonomy.py)
+    auto_triage: bool = True  # triage new mail in the background after every sync
+    spotlight: str = "datamark"  # prompt-injection defense: "none", "delimit" or "datamark"
 
     @field_validator("db_path", "chroma_dir", "context_dir", "mail_file",
                      "gmail_credentials", "gmail_token")

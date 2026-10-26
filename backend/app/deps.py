@@ -11,8 +11,18 @@ from app.rag.store import Embedder, VectorStore
 
 
 @lru_cache
+def get_embedder() -> Embedder:
+    return Embedder(settings.embed_model)  # loaded once, shared by both collections
+
+
+@lru_cache
 def get_store() -> VectorStore:
-    return VectorStore(settings.chroma_dir, Embedder(settings.embed_model))
+    return VectorStore(settings.chroma_dir, get_embedder())
+
+
+@lru_cache
+def get_mail_retriever() -> Retriever:
+    return Retriever(VectorStore(settings.chroma_dir, get_embedder(), name="mails"))
 
 
 @lru_cache

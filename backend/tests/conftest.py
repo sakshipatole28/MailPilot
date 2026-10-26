@@ -47,10 +47,23 @@ class FakeLLM:
 
 @pytest.fixture(autouse=True)
 def temp_db(tmp_path, monkeypatch):
+    """Isolate every test from the developer's .env: temp DB, sample mail, fixed defaults."""
+    from app.config import ROOT
+
     monkeypatch.setattr(settings, "db_path", tmp_path / "test.db")
     monkeypatch.setattr(settings, "chroma_dir", tmp_path / "chroma")
     monkeypatch.setattr(settings, "llm_retries", 1)
+    monkeypatch.setattr(settings, "mail_source", "file")  # never call a real Gmail account
+    monkeypatch.setattr(settings, "mail_file", ROOT / "data" / "sample_mails.json")
+    monkeypatch.setattr(settings, "model", "groq/test-default")
+    monkeypatch.setattr(settings, "category_preset", "student")
+    monkeypatch.setattr(settings, "spotlight", "datamark")
+    monkeypatch.setattr(settings, "local_only", False)
     db.init_db()
+    from app.jobs import worker  # the queue is process-global; start each test empty
+    worker.queued.clear()
+    while not worker.queue.empty():
+        worker.queue.get_nowait()
     yield
 
 

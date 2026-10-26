@@ -7,8 +7,8 @@ from app.api.mail import get_mail_or_404
 from app.api.settings import runtime_settings
 from app.config import settings
 from app.deps import get_retriever, llm_options
-from app.llm.classifier import llm_classify
-from app.llm.client import LLMError
+from app.jobs import run_triage
+from app.llm import security
 from app.llm.generator import draft_reply
 from app.models import DraftRequest, Feedback, GeneratedEmail, LLMOptions
 
@@ -18,20 +18,19 @@ router = APIRouter(tags=["draft"])
 
 @router.post("/draft", response_model=GeneratedEmail)
 def draft(req: DraftRequest, opts: LLMOptions = Depends(llm_options)):
-    """classify -> retrieve (filtered by category + sender) -> generate -> guardrails."""
+    """triage (if not done) -> retrieve (filtered by category + sender) -> generate -> guardrails."""
     mail = get_mail_or_404(req.mail_id)
     current = runtime_settings()
 
-    if mail.classified_by != "llm":
-        try:
-            result = llm_classify(mail, opts, current.categories)
-            db.save_classification(mail.id, result)
-            mail.category = result.category
-        except LLMError as e:
-            log.warning("classification failed, keeping keyword label: %s", e)
+    if mail.triage_status != "done":
+        done, _ = run_triage([mail.id], opts)  # failure is fine: draft with the keyword label
+        mail = done[0] if done else mail
 
+    # Defense in depth: a mail that tries to instruct the AI never gets the user's notes,
+    # so a successful injection still has nothing private to leak.
+    injected = security.looks_like_injection(f"{mail.subject}\n{mail.body}")
     chunks, style = [], []
-    if req.use_rag:
+    if req.use_rag and not injected:
         retriever = get_retriever()
         query = f"{mail.subject}\n{mail.body[:1000]}"
         chunks = retriever.search(query, k=settings.top_k, category=mail.category,
@@ -40,6 +39,11 @@ def draft(req: DraftRequest, opts: LLMOptions = Depends(llm_options)):
 
     email = draft_reply(mail, chunks, style, req.tone or current.tone, current.user_name,
                         req.instruction, opts)
+    if injected:
+        email.issues.insert(0, "This mail contains instructions aimed at AI assistants; your notes "
+                               "were not used. Check the draft carefully.")
+    if mail.risk_level == "high":
+        email.issues.insert(0, "This mail looks like phishing: " + "; ".join(mail.risk_reasons[:2]))
     email.draft_id = db.save_draft(mail.id, req.instruction, email)
     log.info("draft %s for mail %s: %d sources, %d issues",
              email.draft_id, mail.id, len(chunks), len(email.issues))

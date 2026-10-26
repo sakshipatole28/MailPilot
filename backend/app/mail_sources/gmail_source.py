@@ -21,6 +21,7 @@ def gmail_message_to_mail(msg: dict) -> Mail:
     parsed = email.message_from_bytes(raw, policy=policy.default)
     mail = message_to_mail(parsed, msg["id"], thread_id=msg.get("threadId"))
     mail.is_read = "UNREAD" not in msg.get("labelIds", [])
+    mail.labels = list(msg.get("labelIds", []))  # e.g. CATEGORY_PROMOTIONS, IMPORTANT
     return mail
 
 

@@ -94,10 +94,15 @@ def test_user_key_is_passed_per_request(fake_llm):
 def test_keyword_classifier():
     mail = make_mail(subject="DBMS assignment 3", body="Submit the assignment on Moodle.",
                      sender="prof@westbrook.edu")
-    assert keyword_classify(mail).category == "Academic"
+    assert keyword_classify(mail, DEFAULT_CATEGORIES).category == "Academic"
     newsletter = make_mail(subject="Weekly digest", body="Top stories. Unsubscribe")
-    result = keyword_classify(newsletter)
+    result = keyword_classify(newsletter, DEFAULT_CATEGORIES)
     assert result.category == "Other" and result.needs_reply is False
+    general = ["Education", "Newsletters", "Promotions", "Other"]
+    assert keyword_classify(newsletter, general).category == "Newsletters"
+    promo = make_mail(subject="Hello", body="hi")
+    promo.labels = ["CATEGORY_PROMOTIONS"]
+    assert keyword_classify(promo, general).category == "Promotions"  # Gmail tab wins
 
 
 def test_llm_classifier_validates_output(fake_llm):

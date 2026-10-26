@@ -33,10 +33,11 @@ class Embedder:
 
 
 class VectorStore:
-    COLLECTION = "context"
+    """One Chroma collection: "context" holds the user's notes, "mails" holds the inbox."""
 
-    def __init__(self, path, embedder):
+    def __init__(self, path, embedder, name: str = "context"):
         self.embedder = embedder
+        self.name = name
         self.client = chromadb.PersistentClient(
             path=str(path), settings=ChromaSettings(anonymized_telemetry=False)
         )
@@ -45,13 +46,27 @@ class VectorStore:
 
     def _open(self):
         return self.client.get_or_create_collection(
-            self.COLLECTION, metadata={"hnsw:space": "cosine"}, embedding_function=None
+            self.name, metadata={"hnsw:space": "cosine"}, embedding_function=None
         )
 
     def reset(self) -> None:
-        self.client.delete_collection(self.COLLECTION)
+        self.client.delete_collection(self.name)
         self.collection = self._open()
         self.version += 1
+
+    def upsert(self, chunks: list[Chunk]) -> None:
+        if not chunks:
+            return
+        self.collection.upsert(
+            ids=[c.id for c in chunks],
+            documents=[c.text for c in chunks],
+            metadatas=[c.meta for c in chunks],
+            embeddings=self.embedder.embed_docs([c.text for c in chunks]),
+        )
+        self.version += 1
+
+    def has(self, ids: list[str]) -> set[str]:
+        return set(self.collection.get(ids=ids, include=[])["ids"]) if ids else set()
 
     def add(self, chunks: list[Chunk]) -> None:
         if not chunks:

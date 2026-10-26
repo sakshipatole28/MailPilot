@@ -14,6 +14,8 @@ $style_examples
 CONTEXT (snippets from $user_name's own notes; may be empty):
 $context
 
+$untrusted_note
+
 INCOMING EMAIL
 From: $sender
 Subject: $subject
@@ -21,5 +23,7 @@ Received: $received_at
 
 $body
 
+Also suggest up to 3 very short alternative replies (under 12 words each, different from each other, e.g. accept / decline / ask for more time) that $user_name could send instead. Same rules: no invented facts.
+
 Return only JSON, no other text:
-{"subject": "Re: ...", "body": "..."}
+{"subject": "Re: ...", "body": "...", "quick_replies": ["...", "..."]}

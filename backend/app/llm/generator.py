@@ -1,4 +1,6 @@
 """Reply drafts and new emails: prompt -> LLM -> guardrails."""
+from app.config import settings
+from app.llm import security
 from app.llm.client import LLMError, complete, parse_json, render_prompt
 from app.llm.guardrails import check_draft
 from app.models import GeneratedEmail, LLMOptions, Mail, SourceChunk
@@ -10,28 +12,37 @@ def format_context(chunks: list[SourceChunk]) -> str:
     return "\n\n".join(f"[{i}] ({c.title}) {c.text}" for i, c in enumerate(chunks, 1))
 
 
-def _subject_and_body(raw: str, default_subject: str) -> tuple[str, str]:
+def _parse(raw: str, default_subject: str) -> tuple[str, str, list[str]]:
+    """(subject, body, quick replies) from the model's JSON, tolerating a plain-text reply."""
     try:
         data = parse_json(raw)
-        return str(data.get("subject") or default_subject), str(data.get("body", "")).strip()
     except LLMError:
-        return default_subject, raw.strip()  # model ignored the JSON format: keep its text
+        return default_subject, security.unmark(raw.strip()), []  # model ignored the format
+    quick = [security.unmark(str(q)).strip() for q in data.get("quick_replies", []) if str(q).strip()]
+    return (security.unmark(str(data.get("subject") or default_subject)),
+            security.unmark(str(data.get("body", "")).strip()), quick[:3])
 
 
-def _finish(subject: str, body: str, source_text: str, chunks, model: str) -> GeneratedEmail:
+def _finish(subject: str, body: str, source_text: str, chunks, model: str,
+            quick_replies: list[str] = ()) -> GeneratedEmail:
     checked_subject = check_draft(subject, source_text)
     checked_body = check_draft(body, source_text)
+    # A quick reply is dropped, not patched, if it states anything unsupported.
+    safe_quick = [q for q in quick_replies if not check_draft(q, source_text).issues]
     return GeneratedEmail(
         subject=checked_subject.text,
         body=checked_body.text,
         sources=chunks,
         issues=checked_subject.issues + checked_body.issues,
+        quick_replies=safe_quick,
         model=model,
     )
 
 
 def draft_reply(mail: Mail, chunks: list[SourceChunk], style_examples: list[SourceChunk],
-                tone: str, user_name: str, instruction: str, opts: LLMOptions) -> GeneratedEmail:
+                tone: str, user_name: str, instruction: str, opts: LLMOptions,
+                spotlight_mode: str | None = None) -> GeneratedEmail:
+    body, note = security.spotlight(mail.body[:4000], spotlight_mode or settings.spotlight)
     prompt = render_prompt(
         "reply",
         user_name=user_name,
@@ -42,13 +53,14 @@ def draft_reply(mail: Mail, chunks: list[SourceChunk], style_examples: list[Sour
         sender=f"{mail.sender_name} <{mail.sender}>",
         subject=mail.subject,
         received_at=mail.received_at.strftime("%A %d %B %Y"),
-        body=mail.body[:4000],
+        untrusted_note=note,
+        body=body,
     )
-    subject, body = _subject_and_body(complete(prompt, opts), f"Re: {mail.subject}")
+    subject, body, quick = _parse(complete(prompt, opts), f"Re: {mail.subject}")
     # Style examples are deliberately not part of the source text: they must not license facts.
     source_text = "\n".join([mail.sender, mail.sender_name, mail.subject, mail.body,
                              instruction, user_name] + [c.text for c in chunks])
-    return _finish(subject, body, source_text, chunks, opts.model)
+    return _finish(subject, body, source_text, chunks, opts.model, quick)
 
 
 def compose_email(instruction: str, chunks: list[SourceChunk], tone: str, user_name: str,
@@ -57,6 +69,6 @@ def compose_email(instruction: str, chunks: list[SourceChunk], tone: str, user_n
         "compose", user_name=user_name, tone=tone, context=format_context(chunks),
         instruction=instruction,
     )
-    subject, body = _subject_and_body(complete(prompt, opts), "")
+    subject, body, _ = _parse(complete(prompt, opts), "")
     source_text = "\n".join([instruction, user_name] + [c.text for c in chunks])
     return _finish(subject, body, source_text, chunks, opts.model)

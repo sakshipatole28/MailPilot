@@ -29,6 +29,32 @@ KEYWORDS = {
     "Project": ["project", "repo", "pull request", "github", "hackathon", "sprint", "standup",
                 "merge", "prototype", "demo", "research", "dataset", "deploy", "bug"],
 }
+# Keywords for the "general" preset.
+KEYWORDS.update({
+    "Work & Career": ["interview", "recruiter", "offer letter", "hiring", "position", "candidate",
+                      "application", "resume", "job", "internship", "onboarding", "colleague"],
+    "Education": ["assignment", "exam", "course", "lecture", "professor", "semester", "grade",
+                  "quiz", "syllabus", "university", "tuition", "class"],
+    "Projects": ["project", "repo", "pull request", "github", "hackathon", "sprint", "merge",
+                 "deploy", "prototype", "issue #", "code review"],
+    "Finance & Bills": ["bill", "statement", "payment due", "invoice", "bank", "credit card",
+                        "emi", "tax", "salary", "insurance", "amount due"],
+    "Purchases & Deliveries": ["order", "shipped", "delivery", "delivered", "tracking",
+                               "receipt", "refund", "return request", "out for delivery"],
+    "Travel & Events": ["flight", "booking", "itinerary", "hotel", "ticket", "boarding",
+                        "reservation", "rsvp", "event", "check-in"],
+    "Accounts & Security": ["sign-in", "sign in", "verification code", "otp", "password",
+                            "security alert", "login", "two-factor", "new device"],
+    "Newsletters": ["newsletter", "digest", "this week", "weekly", "edition", "read online"],
+    "Promotions": ["% off", "sale", "discount", "deal", "coupon", "promo", "limited time",
+                   "free shipping"],
+    "Social & Community": ["linkedin", "facebook", "instagram", "community", "forum", "club",
+                           "followers", "group"],
+})
+# Gmail already sorts mail into tabs; use them when the matching category exists.
+GMAIL_TABS = {"CATEGORY_PROMOTIONS": "Promotions", "CATEGORY_SOCIAL": "Social & Community",
+              "CATEGORY_FORUMS": "Social & Community"}
+
 REPLY_CUES = re.compile(
     r"please (reply|confirm|let (me|us) know|share|send|respond)|let (me|us) know|could you|"
     r"can you|kindly (confirm|reply|share)|revert|your availability|are you available",
@@ -42,6 +68,12 @@ def _hits(words: list[str], text: str) -> int:
 
 
 def keyword_classify(mail: Mail, categories: list[str] | None = None) -> Classification:
+    """Instant, free label shown until the LLM triage finishes (and the eval's baseline)."""
+    for label in mail.labels:
+        tab = GMAIL_TABS.get(label)
+        if tab and (categories is None or tab in categories):
+            return Classification(category=tab, priority="low", needs_reply=False,
+                                  reason="Gmail tab", method="keywords")
     subject, body = mail.subject.lower(), mail.body.lower()
     scores = {
         cat: 2 * _hits(words, subject) + _hits(words, body)
@@ -50,8 +82,9 @@ def keyword_classify(mail: Mail, categories: list[str] | None = None) -> Classif
     }
     if any(w in mail.sender for w in ("placement", "career", "tpo")):
         scores["Placement"] = scores.get("Placement", 0) + 3
-    best = max(scores, key=scores.get) if scores else "Other"
-    category = best if scores.get(best, 0) >= 2 else "Other"
+    fallback = "Other" if categories is None or "Other" in categories else categories[-1]
+    best = max(scores, key=scores.get) if scores else fallback
+    category = best if scores.get(best, 0) >= 2 else fallback
 
     is_bulk = "unsubscribe" in body
     needs_reply = bool(REPLY_CUES.search(mail.body)) and not is_bulk

@@ -1,0 +1,16 @@
+Answer $user_name's question about their own inbox, using only the emails below.
+
+Rules:
+- Use only facts stated in the emails. If they do not contain the answer, say so plainly.
+- Be brief: at most 4 sentences. Include concrete details (dates, times, names) when they answer the question.
+- List the ids of the emails you used.
+$untrusted_note
+
+QUESTION
+$question
+
+EMAILS
+$emails
+
+Return only JSON, no other text:
+{"answer": "...", "mail_ids": ["..."]}

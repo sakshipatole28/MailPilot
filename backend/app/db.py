@@ -64,6 +64,22 @@ CREATE TABLE IF NOT EXISTS llm_cache (
 );
 """
 
+# Columns added after the first release. init_db() adds any that an existing database lacks,
+# so upgrading never needs a manual migration and never loses data.
+MAIL_COLUMNS = {
+    "headers_json": "TEXT DEFAULT '{}'",
+    "labels_json": "TEXT DEFAULT '[]'",
+    "links_json": "TEXT DEFAULT '[]'",
+    "summary": "TEXT DEFAULT ''",
+    "intents_json": "TEXT DEFAULT '[]'",
+    "priority_score": "INTEGER",
+    "priority_reasons_json": "TEXT DEFAULT '[]'",
+    "risk_level": "TEXT",
+    "risk_reasons_json": "TEXT DEFAULT '[]'",
+    "triage_status": "TEXT",
+    "triage_error": "TEXT DEFAULT ''",
+}
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -84,6 +100,10 @@ def get_conn():
 def init_db() -> None:
     with get_conn() as conn:
         conn.executescript(SCHEMA)
+        existing = {row["name"] for row in conn.execute("PRAGMA table_info(mails)")}
+        for column, ddl in MAIL_COLUMNS.items():
+            if column not in existing:
+                conn.execute(f"ALTER TABLE mails ADD COLUMN {column} {ddl}")
 
 
 # ---- settings (key/value, JSON-encoded) ----
@@ -130,6 +150,16 @@ def _row_to_mail(row: sqlite3.Row) -> Mail:
         replied=bool(row["replied"]), category=row["category"], priority=row["priority"],
         needs_reply=None if needs_reply is None else bool(needs_reply),
         classified_by=row["classified_by"],
+        headers=json.loads(row["headers_json"] or "{}"),
+        labels=json.loads(row["labels_json"] or "[]"),
+        links=json.loads(row["links_json"] or "[]"),
+        summary=row["summary"] or "",
+        intents=json.loads(row["intents_json"] or "[]"),
+        priority_score=row["priority_score"],
+        priority_reasons=json.loads(row["priority_reasons_json"] or "[]"),
+        risk_level=row["risk_level"],
+        risk_reasons=json.loads(row["risk_reasons_json"] or "[]"),
+        triage_status=row["triage_status"],
     )
 
 
@@ -140,9 +170,11 @@ def upsert_mails(mails: list[Mail]) -> int:
         for m in mails:
             cur = conn.execute(
                 "INSERT OR IGNORE INTO mails (id, thread_id, sender, sender_name, to_addr, subject, "
-                "body, received_at, is_read, replied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "body, received_at, is_read, replied, headers_json, labels_json, links_json) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (m.id, m.thread_id, m.sender, m.sender_name, m.to, m.subject, m.body,
-                 m.received_at.isoformat(), int(m.is_read), int(m.replied)),
+                 m.received_at.isoformat(), int(m.is_read), int(m.replied),
+                 json.dumps(m.headers), json.dumps(m.labels), json.dumps(m.links)),
             )
             if cur.rowcount:
                 new += 1
@@ -167,6 +199,16 @@ def list_mails(category: str | None = None) -> list[Mail]:
     return [_row_to_mail(r) for r in rows]
 
 
+def get_mails(mail_ids: list[str]) -> list[Mail]:
+    if not mail_ids:
+        return []
+    marks = ",".join("?" * len(mail_ids))
+    with get_conn() as conn:
+        rows = conn.execute(f"SELECT * FROM mails WHERE id IN ({marks})", mail_ids).fetchall()
+    by_id = {r["id"]: _row_to_mail(r) for r in rows}
+    return [by_id[i] for i in mail_ids if i in by_id]
+
+
 def update_mail_flags(mail_id: str, is_read: bool | None, replied: bool | None) -> None:
     with get_conn() as conn:
         if is_read is not None:
@@ -184,7 +226,67 @@ def save_classification(mail_id: str, c: Classification) -> None:
         )
 
 
-# ---- deadlines ----
+def set_user_category(mail_id: str, category: str) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE mails SET category = ?, classified_by = 'user' WHERE id = ?",
+                     (category, mail_id))
+
+
+def corrected_mails(limit: int = 200) -> list[Mail]:
+    """Mails whose category the user fixed by hand: few-shot examples for the triage prompt."""
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM mails WHERE classified_by = 'user' "
+                            "ORDER BY received_at DESC LIMIT ?", (limit,)).fetchall()
+    return [_row_to_mail(r) for r in rows]
+
+
+def replied_senders() -> set[str]:
+    """Senders the user has replied to before: a strong importance signal (Gmail Priority Inbox)."""
+    with get_conn() as conn:
+        rows = conn.execute("SELECT DISTINCT sender FROM mails WHERE replied = 1").fetchall()
+    return {r["sender"] for r in rows}
+
+
+# ---- triage ----
+
+def set_triage_status(mail_ids: list[str], status: str | None, error: str = "") -> None:
+    with get_conn() as conn:
+        conn.executemany("UPDATE mails SET triage_status = ?, triage_error = ? WHERE id = ?",
+                         [(status, error[:300], i) for i in mail_ids])
+
+
+def untriaged_mail_ids(limit: int = 1000) -> list[str]:
+    """Mails never triaged (or that failed), newest first."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id FROM mails WHERE triage_status IS NULL OR triage_status = 'failed' "
+            "ORDER BY received_at DESC LIMIT ?", (limit,)).fetchall()
+    return [r["id"] for r in rows]
+
+
+def triage_counts() -> dict[str, int]:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT COALESCE(triage_status, 'new') AS s, COUNT(*) AS n "
+                            "FROM mails GROUP BY s").fetchall()
+    return {r["s"]: r["n"] for r in rows}
+
+
+def save_triage(mail: Mail) -> None:
+    """Store the triage fields of `mail`. A user's category correction is never overwritten."""
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE mails SET category = CASE WHEN classified_by = 'user' THEN category ELSE ? END, "
+            "classified_by = CASE WHEN classified_by = 'user' THEN 'user' ELSE 'llm' END, "
+            "priority = ?, needs_reply = ?, summary = ?, intents_json = ?, priority_score = ?, "
+            "priority_reasons_json = ?, risk_level = ?, risk_reasons_json = ?, "
+            "triage_status = 'done', triage_error = '' WHERE id = ?",
+            (mail.category, mail.priority, int(bool(mail.needs_reply)), mail.summary,
+             json.dumps(mail.intents), mail.priority_score, json.dumps(mail.priority_reasons),
+             mail.risk_level, json.dumps(mail.risk_reasons), mail.id),
+        )
+
+
+# ---- deadlines (tasks) ----
 
 def save_deadlines(items: list[Deadline]) -> None:
     with get_conn() as conn:
@@ -192,7 +294,7 @@ def save_deadlines(items: list[Deadline]) -> None:
             conn.execute(
                 "INSERT OR IGNORE INTO deadlines (mail_id, title, due_iso, confidence, evidence, "
                 "created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (d.mail_id, d.title, d.due_iso, d.confidence, d.evidence, now_iso()),
+                (d.mail_id, d.title, d.due_iso or "", d.confidence, d.evidence, now_iso()),
             )
 
 
@@ -207,11 +309,13 @@ def list_deadlines(include_done: bool = False, mail_id: str | None = None) -> li
         args.append(mail_id)
     with get_conn() as conn:
         rows = conn.execute(sql, args).fetchall()
-    items = [Deadline(id=r["id"], mail_id=r["mail_id"], title=r["title"], due_iso=r["due_iso"],
+    items = [Deadline(id=r["id"], mail_id=r["mail_id"], title=r["title"],
+                      due_iso=r["due_iso"] or None,  # stored as '' when the task has no date
                       confidence=r["confidence"], evidence=r["evidence"], done=bool(r["done"]),
                       mail_subject=r["mail_subject"]) for r in rows]
-    # Sort in Python: due_iso strings can carry different UTC offsets.
-    return sorted(items, key=lambda d: datetime.fromisoformat(d.due_iso))
+    # Dated tasks first, by date (parsed: strings can carry different UTC offsets); then undated.
+    far_future = datetime.max.replace(tzinfo=timezone.utc)
+    return sorted(items, key=lambda d: datetime.fromisoformat(d.due_iso) if d.due_iso else far_future)
 
 
 def set_deadline_done(deadline_id: int, done: bool) -> bool:
