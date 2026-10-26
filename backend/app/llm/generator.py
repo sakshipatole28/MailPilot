@@ -1,6 +1,6 @@
 """Reply drafts and new emails: prompt -> LLM -> guardrails."""
 from app.config import settings
-from app.llm import security
+from app.llm import schemas, security
 from app.llm.client import LLMError, complete, parse_json, render_prompt
 from app.llm.guardrails import check_draft
 from app.models import GeneratedEmail, LLMOptions, Mail, SourceChunk
@@ -39,9 +39,17 @@ def _finish(subject: str, body: str, source_text: str, chunks, model: str,
     )
 
 
-def draft_reply(mail: Mail, chunks: list[SourceChunk], style_examples: list[SourceChunk],
-                tone: str, user_name: str, instruction: str, opts: LLMOptions,
-                spotlight_mode: str | None = None) -> GeneratedEmail:
+def reply_source_text(mail: Mail, chunks: list[SourceChunk], instruction: str, user_name: str) -> str:
+    """What a reply may state facts from. Style examples are deliberately excluded: they show
+    how the user writes, they must not license facts."""
+    return "\n".join([mail.sender, mail.sender_name, mail.subject, mail.body, instruction,
+                      user_name] + [c.text for c in chunks])
+
+
+def generate_reply(mail: Mail, chunks: list[SourceChunk], style_examples: list[SourceChunk],
+                   tone: str, user_name: str, instruction: str, opts: LLMOptions,
+                   spotlight_mode: str | None = None) -> tuple[str, str, list[str]]:
+    """One reply-generation call: (subject, body, quick replies), not yet guardrail-checked."""
     body, note = security.spotlight(mail.body[:4000], spotlight_mode or settings.spotlight)
     prompt = render_prompt(
         "reply",
@@ -56,10 +64,31 @@ def draft_reply(mail: Mail, chunks: list[SourceChunk], style_examples: list[Sour
         untrusted_note=note,
         body=body,
     )
-    subject, body, quick = _parse(complete(prompt, opts), f"Re: {mail.subject}")
-    # Style examples are deliberately not part of the source text: they must not license facts.
-    source_text = "\n".join([mail.sender, mail.sender_name, mail.subject, mail.body,
-                             instruction, user_name] + [c.text for c in chunks])
+    return _parse(complete(prompt, opts, schema=schemas.REPLY, name="reply"), f"Re: {mail.subject}")
+
+
+def revise_reply(mail: Mail, chunks: list[SourceChunk], subject: str, body: str,
+                 problems: list[str], user_name: str, opts: LLMOptions,
+                 spotlight_mode: str | None = None) -> tuple[str, str]:
+    """Ask the model to fix the specific unsupported facts the guardrail found."""
+    marked, note = security.spotlight(mail.body[:4000], spotlight_mode or settings.spotlight)
+    prompt = render_prompt(
+        "revise", user_name=user_name, context=format_context(chunks),
+        problems="\n".join(f"- {p}" for p in problems), subject=subject, draft=body,
+        sender=f"{mail.sender_name} <{mail.sender}>", mail_subject=mail.subject,
+        untrusted_note=note, body=marked)
+    new_subject, new_body, _ = _parse(complete(prompt, opts, schema=schemas.REVISE, name="revise"), subject)
+    return new_subject, new_body
+
+
+def draft_reply(mail: Mail, chunks: list[SourceChunk], style_examples: list[SourceChunk],
+                tone: str, user_name: str, instruction: str, opts: LLMOptions,
+                spotlight_mode: str | None = None) -> GeneratedEmail:
+    """Single pass: generate, then guardrails. (The API uses the self-correcting graph in
+    app/agents/draft_graph.py; this stays for the eval's defense comparisons.)"""
+    subject, body, quick = generate_reply(mail, chunks, style_examples, tone, user_name,
+                                          instruction, opts, spotlight_mode)
+    source_text = reply_source_text(mail, chunks, instruction, user_name)
     return _finish(subject, body, source_text, chunks, opts.model, quick)
 
 
@@ -69,6 +98,6 @@ def compose_email(instruction: str, chunks: list[SourceChunk], tone: str, user_n
         "compose", user_name=user_name, tone=tone, context=format_context(chunks),
         instruction=instruction,
     )
-    subject, body, _ = _parse(complete(prompt, opts), "")
+    subject, body, _ = _parse(complete(prompt, opts, schema=schemas.COMPOSE, name="compose"), "")
     source_text = "\n".join([instruction, user_name] + [c.text for c in chunks])
     return _finish(subject, body, source_text, chunks, opts.model)

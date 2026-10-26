@@ -6,6 +6,7 @@ from rank_bm25 import BM25Okapi
 from app.models import SourceChunk
 from app.rag.chunker import Chunk
 from app.rag.store import VectorStore
+from app.tracing import span
 
 STOPWORDS = set("a an and are as at be by for from has have i in is it of on or our the this to "
                 "we with you your my me will can".split())
@@ -74,6 +75,12 @@ class Retriever:
                contact: str | None = None, doc_type: str | None = None,
                mode: str = "hybrid") -> list[SourceChunk]:
         """mode: "hybrid" (default), "vector" or "bm25" (the last two exist for the eval)."""
+        with span("retrieve", collection=self.store.name, mode=mode, k=k) as s:
+            hits = self._search(query, k, category, contact, doc_type, mode)
+            s.set_attribute("hits", len(hits))
+            return hits
+
+    def _search(self, query, k, category, contact, doc_type, mode) -> list[SourceChunk]:
         n = max(k * 5, 20)
         rankings = []
         if mode in ("hybrid", "vector"):

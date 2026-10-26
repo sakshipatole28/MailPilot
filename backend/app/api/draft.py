@@ -9,7 +9,7 @@ from app.config import settings
 from app.deps import get_retriever, llm_options
 from app.jobs import run_triage
 from app.llm import security
-from app.llm.generator import draft_reply
+from app.agents.draft_graph import run_draft_graph
 from app.models import DraftRequest, Feedback, GeneratedEmail, LLMOptions
 
 log = logging.getLogger("mailpilot.draft")
@@ -18,7 +18,8 @@ router = APIRouter(tags=["draft"])
 
 @router.post("/draft", response_model=GeneratedEmail)
 def draft(req: DraftRequest, opts: LLMOptions = Depends(llm_options)):
-    """triage (if not done) -> retrieve (filtered by category + sender) -> generate -> guardrails."""
+    """triage (if not done) -> retrieve notes (filtered by category + sender) -> self-correcting
+    draft graph (generate -> check -> revise) -> guardrails."""
     mail = get_mail_or_404(req.mail_id)
     current = runtime_settings()
 
@@ -37,8 +38,8 @@ def draft(req: DraftRequest, opts: LLMOptions = Depends(llm_options)):
                                   contact=mail.sender)
         style = retriever.search(query, k=2, contact=mail.sender, doc_type="reply")
 
-    email = draft_reply(mail, chunks, style, req.tone or current.tone, current.user_name,
-                        req.instruction, opts)
+    email = run_draft_graph(mail, chunks, style, req.tone or current.tone, current.user_name,
+                            req.instruction, opts)
     if injected:
         email.issues.insert(0, "This mail contains instructions aimed at AI assistants; your notes "
                                "were not used. Check the draft carefully.")

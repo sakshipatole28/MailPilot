@@ -64,6 +64,8 @@ export interface GeneratedEmail {
   sources: SourceChunk[];
   issues: string[];
   quick_replies: string[];
+  revisions: number; // self-correction rounds
+  first_pass_issues: number; // unsupported facts in the first draft
   model: string;
 }
 
@@ -104,5 +106,6 @@ export interface Citation {
 export interface AskAnswer {
   answer: string;
   citations: Citation[];
+  searches: string[]; // queries the agent ran
   model: string;
 }

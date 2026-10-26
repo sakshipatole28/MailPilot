@@ -1,0 +1,24 @@
+You are revising a draft reply written for $user_name. A fact checker found statements in it that neither the incoming email nor $user_name's notes support:
+
+$problems
+
+Rewrite the draft so it no longer states those things: remove each one, or replace it with a placeholder in square brackets such as [confirm date]. Keep everything else (tone, structure, the facts that are supported) as it is. Do not add any new facts.
+
+CONTEXT ($user_name's notes):
+$context
+
+$untrusted_note
+
+INCOMING EMAIL
+From: $sender
+Subject: $mail_subject
+
+$body
+
+DRAFT TO REVISE
+Subject: $subject
+
+$draft
+
+Return only JSON, no other text:
+{"subject": "...", "body": "..."}

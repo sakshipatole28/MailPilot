@@ -142,6 +142,13 @@ export function Draft({ mail, onChange }: { mail: Mail | null; onChange: (m: Mai
               ))}
             </div>
           )}
+          {draft.revisions > 0 && (
+            <p className="muted small">
+              Self-checked: the first draft stated {draft.first_pass_issues} thing
+              {draft.first_pass_issues === 1 ? "" : "s"} your mail and notes don't support, so it
+              was revised {draft.revisions}×.
+            </p>
+          )}
           <GeneratedView email={draft} onEdit={setDraft} />
           <div className="row small">
             Rate this draft:

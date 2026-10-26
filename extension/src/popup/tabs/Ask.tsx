@@ -60,6 +60,9 @@ export function Ask({ onOpen }: { onOpen: (mail: Mail) => void }) {
       {answer && (
         <div className="answer">
           <p>{answer.answer}</p>
+          {answer.searches.length > 1 && (
+            <p className="muted small">Searched: {answer.searches.map((q) => `"${q}"`).join(" → ")}</p>
+          )}
           {answer.citations.length > 0 && (
             <>
               <h3>Sources</h3>

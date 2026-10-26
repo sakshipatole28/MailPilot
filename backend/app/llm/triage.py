@@ -7,11 +7,12 @@ One call instead of separate classify + extract calls roughly halves the tokens 
 which matters on free-tier rate limits (see results/ for the measured comparison).
 """
 from app.config import settings
-from app.llm import priority, security
+from app.llm import priority, schemas, security
 from app.llm.client import complete_json, render_prompt
 from app.llm.deadlines import calendar_lines, evidence_found, validate_deadlines
 from app.llm.taxonomy import INTENTS, describe, match_category
 from app.models import Category, Deadline, LLMOptions, Mail, Triage
+from app.tracing import span
 from app.rag.retriever import tokenize
 
 
@@ -68,6 +69,17 @@ def triage_mail(mail: Mail, opts: LLMOptions, categories: list[Category], user_n
                 corrected: list[Mail] = (), known_senders: set[str] = frozenset(),
                 spotlight_mode: str | None = None) -> tuple[Mail, list[Deadline]]:
     """Return the mail with triage fields filled in, plus the tasks found in it."""
+    with span("triage", mail_id=mail.id, model=opts.model) as s:
+        updated, tasks = _triage(mail, opts, categories, user_name, corrected, known_senders,
+                                 spotlight_mode)
+        s.set_attribute("category", updated.category or "")
+        s.set_attribute("priority_score", updated.priority_score or 0)
+        s.set_attribute("risk_level", updated.risk_level or "")
+        s.set_attribute("tasks", len(tasks))
+        return updated, tasks
+
+
+def _triage(mail, opts, categories, user_name, corrected, known_senders, spotlight_mode):
     body, note = security.spotlight(mail.body[:4000], spotlight_mode or settings.spotlight)
     prompt = render_prompt(
         "triage",
@@ -84,7 +96,8 @@ def triage_mail(mail: Mail, opts: LLMOptions, categories: list[Category], user_n
         subject=mail.subject,
         body=body,
     )
-    triage = parse_triage(complete_json(prompt, opts), categories)
+    data = complete_json(prompt, opts, schema=schemas.triage(categories), name="triage")
+    triage = parse_triage(data, categories)
     tasks = tasks_from(triage, mail)
 
     known_domains = {security.registrable(security.domain_of(s)) for s in known_senders}

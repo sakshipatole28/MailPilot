@@ -10,6 +10,7 @@ from app.api import settings as settings_api
 from app.jobs import worker
 from app.llm.client import METRICS, LLMError
 from app.redact import setup_logging
+from app.tracing import setup_tracing
 
 setup_logging()
 db.init_db()
@@ -33,6 +34,7 @@ app.add_middleware(
 )
 for module in (mail, deadlines, draft, compose, ask, rag, settings_api):
     app.include_router(module.router)
+setup_tracing(app)
 
 
 @app.exception_handler(LLMError)
@@ -57,3 +59,9 @@ def metrics():
                          "avg_latency_ms": round(m["latency_ms"] / calls) if calls else 0,
                          "cache_hit_rate": round(m["cache_hits"] / lookups, 3) if lookups else 0}
     return {"llm": models, "triage": db.triage_counts(), "queued": worker.pending()}
+
+
+@app.get("/traces")
+def traces(limit: int = 20):
+    """The latest request traces as span lists (OpenTelemetry), newest first."""
+    return db.recent_traces(min(max(limit, 1), 100))

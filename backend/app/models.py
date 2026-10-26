@@ -126,6 +126,8 @@ class GeneratedEmail(BaseModel):
     sources: list[SourceChunk] = []
     issues: list[str] = []
     quick_replies: list[str] = []
+    revisions: int = 0  # self-correction rounds the draft graph needed
+    first_pass_issues: int = 0  # unsupported facts in the first draft, before revision
     model: str = ""
 
 
@@ -173,6 +175,7 @@ class AskRequest(BaseModel):
 class AskAnswer(BaseModel):
     answer: str
     citations: list[Citation] = []
+    searches: list[str] = []  # the queries the agent ran, in order
     model: str = ""
 
 

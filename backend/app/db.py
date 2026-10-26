@@ -57,6 +57,17 @@ CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS spans (
+    trace_id TEXT NOT NULL,
+    span_id TEXT PRIMARY KEY,
+    parent_id TEXT,
+    name TEXT NOT NULL,
+    start_ns INTEGER NOT NULL,
+    duration_ms REAL NOT NULL,
+    status TEXT,
+    attrs_json TEXT DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS spans_trace ON spans (trace_id);
 CREATE TABLE IF NOT EXISTS llm_cache (
     key TEXT PRIMARY KEY,
     response TEXT NOT NULL,
@@ -345,3 +356,34 @@ def save_feedback(draft_id: int, fb: Feedback) -> bool:
         conn.execute("INSERT INTO feedback (draft_id, rating, comment, created_at) "
                      "VALUES (?, ?, ?, ?)", (draft_id, fb.rating, fb.comment, now_iso()))
     return True
+
+
+# ---- traces ----
+
+MAX_SPANS = 20000
+
+
+def save_spans(rows: list[tuple]) -> None:
+    if not rows:
+        return
+    with get_conn() as conn:
+        conn.executemany("INSERT OR REPLACE INTO spans VALUES (?, ?, ?, ?, ?, ?, ?, ?)", rows)
+        conn.execute("DELETE FROM spans WHERE start_ns < (SELECT start_ns FROM spans "
+                     "ORDER BY start_ns DESC LIMIT 1 OFFSET ?)", (MAX_SPANS,))
+
+
+def recent_traces(limit: int = 20) -> list[dict]:
+    """The latest traces, each with its spans in start order (parent ids give the tree)."""
+    with get_conn() as conn:
+        ids = [r["trace_id"] for r in conn.execute(
+            "SELECT trace_id, MIN(start_ns) AS t FROM spans GROUP BY trace_id "
+            "ORDER BY t DESC LIMIT ?", (limit,))]
+        out = []
+        for trace_id in ids:
+            rows = conn.execute("SELECT * FROM spans WHERE trace_id = ? ORDER BY start_ns",
+                                (trace_id,)).fetchall()
+            out.append({"trace_id": trace_id, "spans": [
+                {"span_id": r["span_id"], "parent_id": r["parent_id"], "name": r["name"],
+                 "duration_ms": round(r["duration_ms"], 1), "status": r["status"],
+                 "attributes": json.loads(r["attrs_json"] or "{}")} for r in rows]})
+    return out
