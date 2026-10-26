@@ -2,6 +2,7 @@
 secrets/
 *.db
 data/chroma/
+data/chroma_eval/
 data/llm_cache/
 __pycache__/
 *.pyc

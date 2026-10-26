@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     ollama_api_base: str = "http://localhost:11434"
     llm_retries: int = 3
     llm_timeout: int = 60
+    max_rate_limit_wait: int = 30  # seconds; the eval raises this to wait out daily limits
 
     db_path: Path = ROOT / "data" / "mailpilot.db"
     chroma_dir: Path = ROOT / "data" / "chroma"

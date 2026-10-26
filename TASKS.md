@@ -1,21 +1,23 @@
 # Tasks
 
 ## Done
-- [x] Backend: config, SQLite, models, redacting logger
-- [x] Mail sources: FileMailSource (JSON, mbox), GmailMailSource (OAuth, read-only)
-- [x] LLM client (LiteLLM) with retry and SQLite response cache; per-request model and key
-- [x] Classifier (LLM + keyword fallback/baseline), deadline extractor with evidence check
-- [x] Reply and compose generator with regex guardrails
-- [x] RAG: chunker with front matter, Chroma + bge-small, BM25, RRF, category/contact/doc-type filters, optional rerank
-- [x] API: mail, classify, deadlines, draft, feedback, compose, rag ingest, settings
-- [x] 61 labeled sample mails (23 need a reply), 15-file context corpus
-- [x] Two labeled retrieval query sets (original wording + paraphrased)
-- [x] Backend tests and extension tests, run in GitHub Actions CI
-- [x] Extension: popup with 5 tabs, background alarms (24 h / 2 h), badge for items due today
-- [x] Eval on three Groq models; draft quality judged with claim-level faithfulness, rubric helpfulness, swapped-order pairwise preference and two judges
-- [x] README, DECISIONS, architecture diagram, demo GIF from the real app
+- [x] Backend: FastAPI, SQLite with automatic migrations, redacting logger
+- [x] Mail sources: Gmail (OAuth, read-only, security headers + labels) and file (JSON, mbox)
+- [x] LiteLLM client: retry/backoff honoring provider hints, JSON repair, strict structured outputs with fallback, cache, metrics
+- [x] Triage in one call: category, intents, importance, summary, tasks, phishing opinion; validated
+- [x] Configurable categories (general / student presets, plain-language descriptions); corrections as few-shot examples
+- [x] Priority score 0-100 with reasons
+- [x] Phishing signals + LLM opinion; prompt-injection defenses (spotlighting, detector, notes withheld)
+- [x] Background worker: triage + indexing after sync
+- [x] LangGraph: self-correcting drafts, agentic Ask your inbox
+- [x] OpenTelemetry tracing (/traces, optional OTLP), /metrics
+- [x] Extension: Today brief, split views, Tasks with .ics export, Draft with risk warning + quick replies, Ask, category editor, auto-sync
+- [x] Eval: classification, deadlines, triage, retrieval (two query sets), drafts (claim-level faithfulness, cross-family judges), phishing P/R, injection attack success rate, self-correction
+- [x] CI on GitHub Actions; README, DECISIONS, architecture diagram, demo
 
-## Open
-- [ ] Gmail: test with a real account (needs `secrets/credentials.json` from Google Cloud)
-- [ ] Stretch: `gmail.compose` scope to save drafts directly into Gmail
-- [ ] Stretch: a small human-rated subset to calibrate the LLM judges
+## Next
+- [ ] Held-out labeled set (the deadline prompt was refined on the eval set)
+- [ ] Gmail draft creation (`gmail.compose`) behind an explicit button
+- [ ] Thread view: triage whole threads, not single messages
+- [ ] Follow-up tracking ("waiting on" for mail you sent)
+- [ ] Multi-user deployment: Postgres, task queue, authentication

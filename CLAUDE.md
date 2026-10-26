@@ -1,6 +1,6 @@
 # MailPilot: notes for Claude
 
-Chrome MV3 popup + FastAPI backend that categorizes mail, extracts deadlines, drafts replies (RAG) and composes new mail.
+Chrome MV3 popup + local FastAPI backend: background triage of mail (category, intents, priority, tasks, phishing), self-correcting RAG drafts, an Ask-your-inbox agent, compose. Never sends mail.
 
 ## Hard rules
 - Never auto-send email. Only return text or create drafts.
@@ -11,11 +11,12 @@ Chrome MV3 popup + FastAPI backend that categorizes mail, extracts deadlines, dr
 - README numbers must come from `eval/run_eval.py` output in `results/`.
 
 ## Layout
-- `backend/app/`: `api/` routers, `mail_sources/` (file, gmail), `llm/` (client, classifier, deadlines, generator, guardrails), `rag/` (chunker, store, retriever, ingest), `prompts/*.txt`
-- `extension/`: Vite + React + CRXJS; `src/background` (alarms, badge), `src/popup` (5 tabs), `src/shared` (api client, types, storage)
+- `backend/app/`: `api/` routers, `agents/` (LangGraph: draft_graph, ask_graph), `llm/` (client, triage, taxonomy, priority, security, schemas, generator, guardrails, deadlines, classifier), `rag/` (chunker, store, retriever, ingest), `mail_sources/` (gmail, file), `jobs.py` (background worker), `tracing.py` (OpenTelemetry), `prompts/*.txt`
+- `extension/`: Vite + React + CRXJS; `src/background` (auto-sync, alarms, badge), `src/popup` (Inbox, Tasks, Draft, Ask, Compose, Settings), `src/shared` (api client, inbox views, reminders, storage)
 - `data/sample_mails.json`: labeled mails (`label.category`, `label.needs_reply`, `label.deadlines`)
 - `data/context/`: RAG corpus (markdown with `---` front matter: type, category, contact)
-- `eval/`: `run_eval.py` writes CSV + markdown to `results/`
+- `eval/`: `run_eval.py` writes CSVs and `results/sections/*.md`; `results/summary.md` joins the sections
+- Tests force the sample inbox and a temp DB (see `tests/conftest.py`); never call real Gmail or a real LLM from tests
 
 ## Commands
 - Backend dev: `cd backend && .venv/bin/uvicorn app.main:app --reload`

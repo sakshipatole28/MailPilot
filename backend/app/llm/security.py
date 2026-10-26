@@ -120,7 +120,10 @@ def is_lookalike(domain: str, trusted: set[str]) -> str | None:
         good = registrable(good)
         if name == good or len(good) < 6 or org_name(name) == org_name(good):
             continue
-        if edit_distance(name, good) <= 2 or (good.split(".")[0] in name and name != good):
+        brand = org_name(good)
+        # paypa1.com (typo) or paypal-secure.com (brand + hyphenated words), but not
+        # googlegroups.com: a longer single word is usually the company's own product domain.
+        if edit_distance(name, good) <= 2 or re.search(rf"(^|-){re.escape(brand)}(-|\.)", name):
             return good
     return None
 
@@ -188,7 +191,9 @@ def assess(mail: Mail, llm_suspicious: bool = False, llm_reasons: list[str] | No
         add(2, "Contains hidden instructions aimed at AI assistants")
 
     if llm_suspicious:
-        add(2, "AI review: " + ("; ".join(llm_reasons or []) or "looks suspicious")[:200])
+        # Weighted highest: content scams (job fees, gift cards) carry no technical signals, and
+        # the LLM was the most precise detector in the eval (see results/).
+        add(3, "AI review: " + ("; ".join(llm_reasons or []) or "looks suspicious")[:200])
 
     level = "high" if points >= 4 else "medium" if points >= 2 else "low"
     return level, reasons

@@ -182,3 +182,10 @@ def test_compose_uses_instruction_as_source(fake_llm):
     result = compose_email("ask HR to reschedule my Friday interview", [], "polite", "Sam", OPTS)
     assert result.issues == []
     assert "[preferred date]" in result.body
+
+
+def test_retry_after_parses_provider_hint():
+    from app.llm.client import retry_after
+    assert retry_after(Exception("Please try again in 3m17.5s. Need more tokens?")) == 197.5
+    assert retry_after(Exception("Please try again in 12.3s")) == 12.3
+    assert retry_after(Exception("Rate limit reached")) is None

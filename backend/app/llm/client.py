@@ -61,6 +61,15 @@ def parse_json(text: str) -> dict:
         raise LLMError(f"Model reply was not valid JSON: {e}") from e
 
 
+def retry_after(error: Exception) -> float | None:
+    """Seconds the provider asked us to wait ("Please try again in 3m17.5s"), if it said."""
+    match = re.search(r"try again in (?:(\d+)h)?(?:(\d+)m(?!s))?(?:([\d.]+)s)?", str(error))
+    if not match or not any(match.groups()):
+        return None
+    hours, minutes, seconds = (float(g) if g else 0.0 for g in match.groups())
+    return hours * 3600 + minutes * 60 + seconds
+
+
 def _cache_key(model: str, messages: list[dict], schema: dict | None = None) -> str:
     parts = [model, messages] + ([schema] if schema else [])  # old cache entries stay valid
     return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
@@ -96,6 +105,9 @@ def _complete(prompt, opts, use_cache, schema, name, s) -> tuple[str, bool]:
     if use_cache and (cached := db.cache_get(key)) is not None:
         _count(opts.model, cache_hits=1)
         return cached, True
+    if use_cache and schema and (cached := db.cache_get(_cache_key(opts.model, messages))) is not None:
+        _count(opts.model, cache_hits=1)  # an earlier prompt-only answer to the same prompt
+        return cached, True
 
     kwargs = {"model": opts.model, "messages": messages, "temperature": 0,
               "timeout": settings.llm_timeout}
@@ -126,13 +138,22 @@ def _complete(prompt, opts, use_cache, schema, name, s) -> tuple[str, bool]:
             if attempt == settings.llm_retries:
                 _count(opts.model, errors=1)
                 raise LLMError(f"{opts.model} failed after retries: {type(e).__name__}") from e
-            wait = min(2 ** attempt * 2, 30)
+            hint = retry_after(e)  # honor the provider's own hint, within our patience
+            wait = min(hint + 1, settings.max_rate_limit_wait) if hint else min(2 ** attempt * 2, 30)
             log.warning("%s: %s (%s), retrying in %ss", opts.model, type(e).__name__,
                         str(e)[:120].replace("\n", " "), wait)
             time.sleep(wait)
             continue
         except litellm.exceptions.BadRequestError as e:
-            if schema and "response_format" in str(e).lower() or schema and "schema" in str(e).lower():
+            message = str(e).lower()
+            if schema and ("tool_use_failed" in message or "tool call validation" in message
+                           or "did not call a tool" in message):
+                # LiteLLM sends Groq's structured outputs as a forced tool call, and gpt-oss
+                # sometimes calls the wrong tool or none at all. Only this call falls back to
+                # prompt-only JSON; the model keeps structured outputs for the next one.
+                s.set_attribute("schema_fallback", "tool_call")
+                return _complete(prompt, opts, use_cache, None, name, s)
+            if schema and ("response_format" in message or "schema" in message):
                 _NO_SCHEMA.add(opts.model)  # provider refused the schema: fall back to prompt-only
                 return _complete(prompt, opts, use_cache, None, name, s)
             _count(opts.model, errors=1)

@@ -52,7 +52,8 @@ from app.deps import get_retriever  # noqa: E402
 from app.llm.classifier import keyword_classify, llm_classify  # noqa: E402
 from app.llm.client import LLMError, complete_json, render_prompt  # noqa: E402
 from app.llm.deadlines import extract_deadlines  # noqa: E402
-from app.llm import security  # noqa: E402
+from app.agents.draft_graph import run_draft_graph  # noqa: E402
+from app.llm import schemas, security  # noqa: E402
 from app.llm.generator import draft_reply, format_context  # noqa: E402
 from app.llm.taxonomy import STUDENT  # noqa: E402
 from app.llm.triage import triage_mail  # noqa: E402
@@ -363,7 +364,7 @@ def eval_detector_false_positives(mails) -> dict:
 def judge_draft(draft: str, mail, chunks, judge_model: str) -> dict:
     prompt = render_prompt("judge", context=format_context(chunks), subject=mail.subject,
                            body=mail.body, draft=draft)
-    data = complete_json(prompt, LLMOptions(model=judge_model))
+    data = complete_json(prompt, LLMOptions(model=judge_model), schema=schemas.JUDGE, name="judge")
     claims = [c for c in data.get("claims", [])
               if isinstance(c, dict) and "[" not in str(c.get("claim", ""))]
     faithfulness, supported, total = claim_faithfulness(claims)
@@ -380,7 +381,8 @@ def judge_pair(rag: str, no_rag: str, mail, chunks, judge_model: str) -> str:
     def ask(a: str, b: str) -> str:
         prompt = render_prompt("pairwise", context=format_context(chunks), subject=mail.subject,
                                body=mail.body, draft_a=a, draft_b=b)
-        return str(complete_json(prompt, LLMOptions(model=judge_model)).get("winner", "tie"))
+        return str(complete_json(prompt, LLMOptions(model=judge_model), schema=schemas.PAIRWISE,
+                                 name="pairwise").get("winner", "tie"))
 
     return pairwise_outcome(ask(rag, no_rag), ask(no_rag, rag))
 
@@ -464,6 +466,48 @@ def eval_drafts(mails, labels, draft_model, judges, pause, second_judge_limit=No
     return summary, detail, pairs, pairwise, agreement
 
 
+def eval_self_correction(mails, labels, writer, judge, pause) -> tuple[list[dict], list[dict]]:
+    """Single-pass drafts vs the self-correcting draft graph, on every needs-reply mail.
+    Both start from the same first draft (same prompt, so the same cached call)."""
+    retriever = get_retriever()
+    opts = LLMOptions(model=writer)
+    detail = []
+    for mail in [m for m in mails if labels[m.id]["needs_reply"]]:
+        query = f"{mail.subject}\n{mail.body[:1000]}"
+        chunks = retriever.search(query, k=settings.top_k, category=labels[mail.id]["category"],
+                                  contact=mail.sender)
+        style = retriever.search(query, k=2, contact=mail.sender, doc_type="reply")
+        single = call(lambda: draft_reply(mail, chunks, style, settings.tone, USER, "", opts), pause)
+        graph = call(lambda: run_draft_graph(mail, chunks, style, settings.tone, USER, "", opts), pause)
+        if single is None or graph is None:
+            continue
+        row = {"mail_id": mail.id, "first_pass_issues": graph.first_pass_issues,
+               "revisions": graph.revisions, "single_final_issues": len(single.issues),
+               "graph_final_issues": len(graph.issues)}
+        for name, email in (("single", single), ("graph", graph)):
+            grade = call(lambda: judge_draft(email.body, mail, chunks, judge), pause)
+            row[f"{name}_faithfulness"] = grade["faithfulness"] if grade else None
+            row[f"{name}_helpfulness"] = grade["helpfulness"] if grade else None
+        detail.append(row)
+        print(f"    {row}")
+    n = len(detail)
+    graded = [d for d in detail if d["single_faithfulness"] is not None and d["graph_faithfulness"] is not None]
+    summary = [{
+        "drafts": n,
+        "drafts_with_unsupported_facts_first_pass": sum(d["first_pass_issues"] > 0 for d in detail),
+        "revised": sum(d["revisions"] > 0 for d in detail),
+        "unsupported_facts_first_pass": sum(d["first_pass_issues"] for d in detail),
+        "left_after_revision": sum(d["graph_final_issues"] for d in detail),
+        "judge": judge,
+        "faithfulness_single_pass": mean(d["single_faithfulness"] for d in graded),
+        "faithfulness_self_correcting": mean(d["graph_faithfulness"] for d in graded),
+        "helpfulness_single_pass": mean(d["single_helpfulness"] for d in graded),
+        "helpfulness_self_correcting": mean(d["graph_helpfulness"] for d in graded),
+    }]
+    print(f"  {summary[0]}")
+    return summary, detail
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", nargs="*", default=[], help="models for classification + deadlines")
@@ -475,6 +519,8 @@ def main():
                         help="grade only the first N mails with the second judge (saves quota)")
     parser.add_argument("--triage-models", nargs="*", default=[], help="models for the triage eval")
     parser.add_argument("--security-model", default=None, help="model for the security eval")
+    parser.add_argument("--self-correction", nargs=2, metavar=("WRITER", "JUDGE"), default=None,
+                        help="evaluate the self-correcting draft graph")
     parser.add_argument("--draft-model", default=None, help="writes the drafts (default: first --models)")
     parser.add_argument("--judges", nargs="*", default=[], help="judge models; the first is primary")
     parser.add_argument("--sleep", type=float, default=0.0, help="seconds between LLM calls")
@@ -483,6 +529,12 @@ def main():
     args = parser.parse_args()
 
     settings.llm_retries = args.retries
+    # The eval never touches the app's data: its own cache DB and search index, whatever .env
+    # says (a user's .env may point DB_PATH at their real Gmail database).
+    settings.db_path = ROOT / "data" / "mailpilot.db"
+    settings.chroma_dir = ROOT / "data" / "chroma_eval"
+    settings.context_dir = ROOT / "data" / "context"
+    settings.max_rate_limit_wait = 900  # free-tier daily limits refill gradually; wait them out
     SECTIONS.mkdir(parents=True, exist_ok=True)
     db.init_db()
     mails, labels = load_data()
@@ -543,6 +595,18 @@ def main():
                 "user's notes available. An attack succeeds if its canary string reaches the final "
                 f"draft. Regex detector false positives on the {fp['mails']} normal sample mails: "
                 f"{fp['flagged_as_injection']}.")
+
+    if args.self_correction:
+        writer, judge = args.self_correction
+        print(f"self-correction: writer {writer}, judge {judge}")
+        sc_summary, sc_detail = eval_self_correction(mails, labels, writer, judge, args.sleep)
+        write_csv("self_correction.csv", sc_summary)
+        write_csv("self_correction_detail.csv", sc_detail)
+        section("55-self-correction", f"Self-correcting drafts (LangGraph), written by {writer}",
+                sc_summary, "Unsupported facts = dates, times, weekdays, links, emails, phone numbers or "
+                "greeting names that neither the mail nor the notes contain (the guardrail's check). "
+                "Single pass masks them with [confirm: ...]; the graph first asks the model to fix "
+                "them (at most 2 rounds), then masks whatever is left.")
 
     draft_model = args.draft_model or (args.models[0] if args.models else None)
     if draft_model and args.judges and not args.skip_drafts:

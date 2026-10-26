@@ -118,6 +118,8 @@ def test_legit_mail_is_low_risk():
 def test_lookalike_of_known_contact_domain():
     assert security.is_lookalike("westbr00k.edu", {"westbrook.edu"}) == "westbrook.edu"
     assert security.is_lookalike("westbrook.edu", {"westbrook.edu"}) is None
+    assert security.is_lookalike("paypal-secure-login.com", {"paypal.com"}) == "paypal.com"
+    assert security.is_lookalike("googlegroups.com", {"google.com"}) is None  # Google's own domain
     assert security.registrable("mail.northwind.co.uk") == "northwind.co.uk"
 
 
@@ -135,3 +137,10 @@ def test_priority_score_and_reasons():
     assert points == 0 and "Mass mail (newsletter or marketing)" in reasons
     assert priority.is_bulk(mail(labels=["CATEGORY_PROMOTIONS"]))
     assert priority.score(mail(), 90, ["reply"], [], False, "high", now)[0] < 40
+
+
+def test_llm_opinion_plus_one_signal_is_high_risk():
+    level, _ = security.assess(mail(body="Pay the processing fee to confirm your seat."),
+                               llm_suspicious=True, llm_reasons=["asks for payment"])
+    assert level == "high"
+    assert security.assess(mail(), llm_suspicious=True)[0] == "medium"  # opinion alone: medium

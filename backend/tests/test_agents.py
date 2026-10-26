@@ -133,3 +133,21 @@ def test_spans_are_recorded_without_mail_text(fake_llm):
     assert {"graph.draft", "graph.draft.generate", "llm.complete"} <= set(names)
     stored = str(db.recent_traces(5))
     assert "Thursday" not in stored and "Priya" not in stored  # no mail or draft text in traces
+
+
+@pytest.mark.parametrize("error", [
+    "Tool call validation failed: attempted to call tool 'json'",
+    'Tool choice is required, but model did not call a tool","code":"tool_use_failed"',
+])
+def test_tool_call_glitch_falls_back_for_that_call_only(fake_llm, monkeypatch, error):
+    monkeypatch.setattr(client, "supports_schema", lambda model: True)
+
+    def glitchy(**kwargs):
+        if "response_format" in kwargs:
+            raise litellm.exceptions.BadRequestError(error, OPTS.model, "groq")
+        return fake_llm(**kwargs)
+
+    monkeypatch.setattr(litellm, "completion", glitchy)
+    fake_llm.reply = '{"ok": 1}'
+    assert client.complete_json(f"z {error}", OPTS, schema={"type": "object"}) == {"ok": 1}
+    assert OPTS.model not in client._NO_SCHEMA  # the model keeps structured outputs next time
