@@ -12,7 +12,7 @@ A Chrome extension and a local Python API that help a student handle email: sort
 
 | Tab | What it does |
 |---|---|
-| Inbox | Syncs mail and shows category, priority, needs-reply and replied badges. "Classify with AI" upgrades the instant keyword labels to LLM labels. |
+| Inbox | Syncs mail automatically every 5 minutes (with a notification for new mail) or on demand, and shows category, priority, needs-reply and replied badges. "Classify with AI" upgrades the instant keyword labels to LLM labels. |
 | Deadlines | Scans mail for deadlines (structured LLM extraction; relative dates resolved against the received date). Sorted list, overdue items in red, mark done. The service worker sets `chrome.alarms` reminders 24 h and 2 h before each due time, and the badge counts items due today. |
 | Draft | Reply draft for the selected mail: classify, retrieve, generate, guardrails. Editable, shows the sources used, has a copy button and a 1-5 rating. |
 | Compose | A new email from an instruction such as "ask HR to reschedule my interview". |
