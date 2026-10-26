@@ -1,12 +1,13 @@
 import { useState } from "react";
 import type { Mail } from "../shared/types";
+import { Ask } from "./tabs/Ask";
 import { Compose } from "./tabs/Compose";
-import { Deadlines } from "./tabs/Deadlines";
 import { Draft } from "./tabs/Draft";
 import { Inbox } from "./tabs/Inbox";
 import { Settings } from "./tabs/Settings";
+import { Tasks } from "./tabs/Tasks";
 
-const TABS = ["Inbox", "Deadlines", "Draft", "Compose", "Settings"] as const;
+const TABS = ["Inbox", "Tasks", "Draft", "Ask", "Compose", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
 export function App() {
@@ -29,8 +30,9 @@ export function App() {
       </nav>
       <main>
         {tab === "Inbox" && <Inbox onOpen={openMail} />}
-        {tab === "Deadlines" && <Deadlines />}
+        {tab === "Tasks" && <Tasks />}
         {tab === "Draft" && <Draft mail={selected} onChange={setSelected} />}
+        {tab === "Ask" && <Ask onOpen={openMail} />}
         {tab === "Compose" && <Compose />}
         {tab === "Settings" && <Settings />}
       </main>

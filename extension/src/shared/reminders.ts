@@ -15,7 +15,7 @@ export interface PlannedAlarm {
 export function plannedAlarms(deadlines: Deadline[], now: number): PlannedAlarm[] {
   const alarms: PlannedAlarm[] = [];
   for (const d of deadlines) {
-    if (d.done) continue;
+    if (d.done || !d.due_iso) continue; // undated to-dos get no reminders
     const due = Date.parse(d.due_iso);
     for (const offset of REMINDER_OFFSETS) {
       const when = due - offset.ms;
@@ -39,12 +39,14 @@ function sameLocalDay(a: Date, b: Date): boolean {
 }
 
 export function dueTodayCount(deadlines: Deadline[], now: Date): number {
-  return deadlines.filter((d) => !d.done && sameLocalDay(new Date(d.due_iso), now)).length;
+  return deadlines.filter((d) => !d.done && d.due_iso && sameLocalDay(new Date(d.due_iso), now))
+    .length;
 }
 
-export type DueState = "overdue" | "today" | "upcoming";
+export type DueState = "overdue" | "today" | "upcoming" | "undated";
 
 export function dueState(d: Deadline, now: Date): DueState {
+  if (!d.due_iso) return "undated";
   const due = new Date(d.due_iso);
   if (due.getTime() < now.getTime()) return "overdue";
   return sameLocalDay(due, now) ? "today" : "upcoming";

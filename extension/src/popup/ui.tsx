@@ -7,9 +7,17 @@ export function Notice({ error, status }: { error?: string; status?: string }) {
   return null;
 }
 
+// Categories are user-defined, so colors come from a small palette picked by name.
+function paletteIndex(name: string): number {
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return hash % 8;
+}
+
 export function CategoryBadge({ category }: { category: string | null }) {
   if (!category) return null;
-  return <span className={`badge cat-${category.replace(/[^a-z]/gi, "")}`}>{category}</span>;
+  const cls = category === "Other" ? "cat-other" : `cat-${paletteIndex(category)}`;
+  return <span className={`badge ${cls}`}>{category}</span>;
 }
 
 export function messageOf(e: unknown): string {

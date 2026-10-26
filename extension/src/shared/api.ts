@@ -1,10 +1,13 @@
 import { keyForModel, loadSettings } from "./storage";
 import type {
+  AskAnswer,
   BackendSettings,
+  Brief,
   Classification,
   Deadline,
   GeneratedEmail,
   Mail,
+  TriageStatus,
 } from "./types";
 
 async function request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
@@ -32,12 +35,21 @@ async function request<T>(path: string, method = "GET", body?: unknown): Promise
   return res.json();
 }
 
+export async function apiUrl(path: string): Promise<string> {
+  return (await loadSettings()).apiBase + path;
+}
+
 export const api = {
-  sync: () => request<{ fetched: number; new: number }>("/mail/sync", "POST"),
+  sync: () => request<{ fetched: number; new: number; queued: number }>("/mail/sync", "POST"),
   mails: () => request<Mail[]>("/mail"),
-  updateMail: (id: string, update: { is_read?: boolean; replied?: boolean }) =>
+  updateMail: (id: string, update: { is_read?: boolean; replied?: boolean; category?: string }) =>
     request<Mail>(`/mail/${encodeURIComponent(id)}`, "PATCH", update),
   classify: (mailId: string) => request<Classification>("/classify", "POST", { mail_id: mailId }),
+  triage: (limit = 10) =>
+    request<{ triaged: number; failed: string[]; remaining: number }>("/triage", "POST", { limit }),
+  triageStatus: () => request<TriageStatus>("/triage/status"),
+  brief: () => request<Brief>("/brief"),
+  ask: (question: string) => request<AskAnswer>("/ask", "POST", { question }),
 
   deadlines: (includeDone = false) =>
     request<Deadline[]>(`/deadlines?include_done=${includeDone}`),

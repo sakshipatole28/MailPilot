@@ -5,12 +5,12 @@ import type { Deadline } from "./types";
 
 const HOUR = 3600 * 1000;
 
-function deadline(id: number, due: Date, done = false): Deadline {
+function deadline(id: number, due: Date | null, done = false): Deadline {
   return {
     id,
     mail_id: "m1",
     title: "t",
-    due_iso: due.toISOString(),
+    due_iso: due ? due.toISOString() : null,
     confidence: 1,
     evidence: "",
     done,
@@ -44,6 +44,13 @@ describe("reminders", () => {
     expect(dueState(today, now)).toBe("today");
     expect(dueState(tomorrow, now)).toBe("upcoming");
     expect(dueState(past, now)).toBe("overdue");
+  });
+
+  it("ignores undated to-dos for alarms and the badge", () => {
+    const todo = deadline(9, null);
+    expect(plannedAlarms([todo], now.getTime())).toEqual([]);
+    expect(dueTodayCount([todo], now)).toBe(0);
+    expect(dueState(todo, now)).toBe("undated");
   });
 });
 

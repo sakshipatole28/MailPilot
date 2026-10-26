@@ -1,0 +1,10 @@
+## Classification with a separate classify prompt (5 categories)
+
+| model | mails | accuracy | macro_f1 | needs_reply_acc | failed_calls |
+|---|---|---|---|---|---|
+| keywords | 61 | 0.787 | 0.778 | 0.902 | 0 |
+| groq/openai/gpt-oss-120b | 61 | 0.951 | 0.949 | 0.951 | 0 |
+| groq/openai/gpt-oss-20b | 61 | 0.918 | 0.917 | 0.951 | 0 |
+| groq/qwen/qwen3.8-27b | 61 | 0.934 | 0.934 | 0.984 | 0 |
+
+_Run: 2026-10-26_

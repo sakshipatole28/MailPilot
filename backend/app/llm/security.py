@@ -108,12 +108,17 @@ def edit_distance(a: str, b: str) -> int:
     return prev[-1]
 
 
+def org_name(domain: str) -> str:
+    """amazon.in -> amazon: companies send from regional domains of the same name."""
+    return registrable(domain).split(".")[0]
+
+
 def is_lookalike(domain: str, trusted: set[str]) -> str | None:
     """Return the trusted domain that `domain` imitates (paypa1.com -> paypal.com), if any."""
     name = registrable(domain)
     for good in trusted:
         good = registrable(good)
-        if name == good or len(good) < 6:
+        if name == good or len(good) < 6 or org_name(name) == org_name(good):
             continue
         if edit_distance(name, good) <= 2 or (good.split(".")[0] in name and name != good):
             return good
@@ -153,7 +158,7 @@ def assess(mail: Mail, llm_suspicious: bool = False, llm_reasons: list[str] | No
     if (m := re.search(r"[\w.+-]+@([\w-]+\.[\w.-]+)", name)) and registrable(m.group(1)) != sender_base:
         add(2, "Display name shows a different email address")
     for brand, brand_domain in BRANDS.items():
-        if re.search(rf"\b{brand}\b", name) and registrable(brand_domain) != sender_base:
+        if re.search(rf"\b{brand}\b", name) and org_name(brand_domain) != org_name(sender_base or "x"):
             add(2, f"Claims to be {brand.title()} but is sent from {sender_domain}")
             break
 

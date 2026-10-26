@@ -12,7 +12,22 @@ export interface Mail {
   category: string | null;
   priority: string | null;
   needs_reply: boolean | null;
-  classified_by: string | null;
+  classified_by: string | null; // "keywords", "llm" or "user"
+  headers: Record<string, string>;
+  labels: string[];
+  links: string[];
+  summary: string;
+  intents: string[]; // reply, task, meeting, fyi
+  priority_score: number | null;
+  priority_reasons: string[];
+  risk_level: "low" | "medium" | "high" | null;
+  risk_reasons: string[];
+  triage_status: "pending" | "done" | "failed" | null;
+}
+
+export interface Category {
+  name: string;
+  description: string;
 }
 
 export interface Classification {
@@ -27,7 +42,7 @@ export interface Deadline {
   id: number;
   mail_id: string;
   title: string;
-  due_iso: string;
+  due_iso: string | null; // null: a to-do without a date
   confidence: number;
   evidence: string;
   done: boolean;
@@ -48,14 +63,46 @@ export interface GeneratedEmail {
   body: string;
   sources: SourceChunk[];
   issues: string[];
+  quick_replies: string[];
   model: string;
 }
 
 export interface BackendSettings {
   model: string;
   tone: string;
-  categories: string[];
+  categories: Category[];
   local_only: boolean;
   user_name: string;
+  auto_triage: boolean;
   suggested_models: string[];
+  presets: Record<string, Category[]>;
+}
+
+export interface Brief {
+  needs_reply: Mail[];
+  due_soon: Deadline[];
+  suspicious: Mail[];
+  unread: number;
+  pending_triage: number;
+}
+
+export interface TriageStatus {
+  queued: number;
+  done: number;
+  pending: number;
+  failed: number;
+  new: number;
+}
+
+export interface Citation {
+  mail_id: string;
+  subject: string;
+  sender: string;
+  received_at: string;
+}
+
+export interface AskAnswer {
+  answer: string;
+  citations: Citation[];
+  model: string;
 }
