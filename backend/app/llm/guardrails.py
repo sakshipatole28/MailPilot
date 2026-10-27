@@ -13,7 +13,7 @@ MONTH = (r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|a
 # One alternation, longest forms first, so a single pass never wraps the same text twice.
 CHECKS = re.compile(
     "|".join([
-        r"(?P<url>https?://[^\s)\]>]+|www\.[^\s)\]>]+)",
+        r"(?P<url>(?:https?://|www\.)[^\s)\]>]*[^\s)\]>.,;:!?'\"])",  # no trailing punctuation
         r"(?P<email>[\w.+-]+@[\w-]+\.[\w.-]+)",
         rf"(?P<date>\b\d{{1,2}}(?:st|nd|rd|th)?\s+{MONTH}\b(?:,?\s+\d{{4}})?"
         rf"|\b{MONTH}\s+\d{{1,2}}(?:st|nd|rd|th)?\b(?:,?\s+\d{{4}})?"
@@ -38,13 +38,22 @@ class GuardrailResult:
     issues: list[str] = field(default_factory=list)
 
 
-def check_draft(draft: str, source_text: str) -> GuardrailResult:
+LINK_KINDS = ("url", "email")
+
+
+def check_draft(draft: str, source_text: str, link_source: str | None = None) -> GuardrailResult:
+    """`link_source`, if given, is the only text that may license URLs and email addresses.
+    Drafts pass the incoming mail's other facts (dates, times) through, but a link or address
+    copied from a stranger's mail is how prompt injections plant phishing links or send data
+    to an attacker, so replies only repeat links the user's own notes or instruction contain."""
     source = _norm(source_text)
+    links = _norm(link_source) if link_source is not None else source
     issues: list[str] = []
 
     def replace(m: re.Match) -> str:
         value = m.group(0)
-        if _norm(value) in source:
+        allowed = links if m.lastgroup in LINK_KINDS else source
+        if _norm(value) in allowed:
             return value
         if m.start() >= 9 and m.string[m.start() - 9:m.start()].lower() == "[confirm:":
             return value  # already a placeholder

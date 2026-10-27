@@ -50,3 +50,13 @@ def test_redacting_filter_formats_args():
     record = logging.LogRecord("mailpilot", logging.INFO, "", 0, "sender %s", ("a@b.com",), None)
     RedactingFilter().filter(record)
     assert record.getMessage() == "sender [email]"
+
+
+def test_links_from_the_incoming_mail_are_not_repeated():
+    mail_text = "Please confirm at https://evil.example/login or write to verify@evil.example. Meeting Friday."
+    notes = "My portfolio: https://sam.dev"
+    result = check_draft("Friday works. See https://sam.dev and https://evil.example/login, "
+                         "or mail verify@evil.example", mail_text + notes, link_source=notes)
+    assert "Friday works" in result.text and "https://sam.dev" in result.text
+    assert "[confirm: https://evil.example/login]" in result.text
+    assert "[confirm: verify@evil.example]" in result.text

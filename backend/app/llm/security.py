@@ -57,6 +57,13 @@ def spotlight(text: str, mode: str) -> tuple[str, str]:
     return f"<{tag}>\n{text}\n</{tag}>", note
 
 
+def unsafe_for_drafting(mail: Mail) -> bool:
+    """Mail that may be trying to steer the assistant: the regex detector fired, or triage (an
+    LLM judge that is asked about AI manipulation) rated it medium or high risk. Drafts for such
+    mail get none of the user's notes and no one-tap quick replies."""
+    return looks_like_injection(f"{mail.subject}\n{mail.body}") or mail.risk_level in ("medium", "high")
+
+
 def unmark(text: str) -> str:
     """Undo datamarking if a model copied the ^ marks into its answer."""
     return text.replace("^", " ") if text.count("^") >= 2 else text

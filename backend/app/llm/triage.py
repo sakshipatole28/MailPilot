@@ -3,8 +3,8 @@ phishing opinion. Deterministic code then validates the output (category must ex
 task needs evidence quoted from the mail, dates are parsed), adds header-based security checks
 and computes the explainable priority score.
 
-One call instead of separate classify + extract calls roughly halves the tokens spent per mail,
-which matters on free-tier rate limits (see results/ for the measured comparison).
+One call instead of separate classify + extract calls halves the requests per mail, which is what
+free-tier rate limits count, for about 10% more input tokens (measured in results/).
 """
 from app.config import settings
 from app.llm import priority, schemas, security

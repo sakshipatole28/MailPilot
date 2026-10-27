@@ -9,4 +9,4 @@
 | retrieval_eval_paraphrased | vector | 18 | 0.472 | 0.556 | 0.694 | 0.588 |
 | retrieval_eval_paraphrased | bm25 | 18 | 0.306 | 0.528 | 0.694 | 0.502 |
 
-_Run: 2026-10-26_
+_Run: 2026-10-27_

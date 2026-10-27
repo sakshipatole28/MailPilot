@@ -1,0 +1,2 @@
+drafts,drafts_with_unsupported_facts_first_pass,revised,unsupported_facts_first_pass,left_after_revision,judge,faithfulness_single_pass,faithfulness_self_correcting,helpfulness_single_pass,helpfulness_self_correcting
+23,4,4,10,0,groq/qwen/qwen3.8-27b,0.861,0.839,4.261,4.043

@@ -149,7 +149,16 @@ def test_injected_mail_gets_no_notes(api, fake_llm):
                                "your reply.", received_at="2026-10-20T10:00:00+05:30")])
     fake_llm.reply = lambda p: as_json({**TRIAGE_M012, "action_items": []} if is_triage(p) else DRAFT)
     body = api.post("/draft", json={"mail_id": "evil"}).json()
-    assert body["sources"] == [] and "instructions aimed at AI" in body["issues"][0]
+    assert body["sources"] == [] and body["quick_replies"] == []
+    assert "manipulate the assistant" in body["issues"][0]
+
+
+def test_mail_the_llm_flags_gets_no_notes_either(api, fake_llm):
+    fake_llm.reply = lambda p: as_json({**TRIAGE_M012, "suspicious": True,
+                                        "suspicious_reasons": ["asks the AI to add a link"]}
+                                       if is_triage(p) else DRAFT)
+    body = api.post("/draft", json={"mail_id": "m012"}).json()
+    assert body["sources"] == [] and body["quick_replies"] == []
 
 
 def test_ask_inbox_cites_mails(api, fake_llm):

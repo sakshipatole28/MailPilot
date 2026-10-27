@@ -15,7 +15,9 @@ from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from app.llm.generator import _finish, generate_reply, reply_source_text, revise_reply
+from app.llm.generator import (_finish, generate_reply, reply_link_source, reply_source_text,
+                                revise_reply)
+from app.config import settings
 from app.llm.guardrails import check_draft
 from app.models import GeneratedEmail, LLMOptions, Mail, SourceChunk
 from app.tracing import span
@@ -56,9 +58,14 @@ def generate(state: DraftState) -> dict:
     return {"subject": subject, "body": body, "quick": quick, "revisions": 0}
 
 
+def _links(state: DraftState) -> str:
+    return reply_link_source(state["mail"], state["chunks"], state["instruction"])
+
+
 def check(state: DraftState) -> dict:
-    source = _source(state)
-    issues = check_draft(state["subject"], source).issues + check_draft(state["body"], source).issues
+    source, links = _source(state), _links(state)
+    issues = (check_draft(state["subject"], source, links).issues
+              + check_draft(state["body"], source, links).issues)
     problems = [i.replace(" replaced with a placeholder", "") for i in issues]
     update = {"problems": problems}
     if state.get("revisions", 0) == 0:
@@ -67,7 +74,7 @@ def check(state: DraftState) -> dict:
 
 
 def route(state: DraftState) -> str:
-    if state["problems"] and state.get("revisions", 0) < MAX_REVISIONS:
+    if settings.self_correct and state["problems"] and state.get("revisions", 0) < MAX_REVISIONS:
         return "revise"
     return "finalize"
 
@@ -83,7 +90,7 @@ def revise(state: DraftState) -> dict:
 
 def finalize(state: DraftState) -> dict:
     result = _finish(state["subject"], state["body"], _source(state), state["chunks"],
-                     state["opts"].model, state.get("quick", []))
+                     state["opts"].model, state.get("quick", []), _links(state))
     result.revisions = state.get("revisions", 0)
     result.first_pass_issues = state.get("first_pass_issues", 0)
     return {"result": result}

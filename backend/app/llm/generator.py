@@ -24,11 +24,11 @@ def _parse(raw: str, default_subject: str) -> tuple[str, str, list[str]]:
 
 
 def _finish(subject: str, body: str, source_text: str, chunks, model: str,
-            quick_replies: list[str] = ()) -> GeneratedEmail:
-    checked_subject = check_draft(subject, source_text)
-    checked_body = check_draft(body, source_text)
+            quick_replies: list[str] = (), link_source: str | None = None) -> GeneratedEmail:
+    checked_subject = check_draft(subject, source_text, link_source)
+    checked_body = check_draft(body, source_text, link_source)
     # A quick reply is dropped, not patched, if it states anything unsupported.
-    safe_quick = [q for q in quick_replies if not check_draft(q, source_text).issues]
+    safe_quick = [q for q in quick_replies if not check_draft(q, source_text, link_source).issues]
     return GeneratedEmail(
         subject=checked_subject.text,
         body=checked_body.text,
@@ -37,6 +37,12 @@ def _finish(subject: str, body: str, source_text: str, chunks, model: str,
         quick_replies=safe_quick,
         model=model,
     )
+
+
+def reply_link_source(mail: Mail, chunks: list[SourceChunk], instruction: str) -> str:
+    """Where a reply may take links and email addresses from: the user's notes and instruction,
+    plus the sender's own address (replying "write to me at ..." is normal)."""
+    return "\n".join([mail.sender, instruction] + [c.text for c in chunks])
 
 
 def reply_source_text(mail: Mail, chunks: list[SourceChunk], instruction: str, user_name: str) -> str:
@@ -89,7 +95,8 @@ def draft_reply(mail: Mail, chunks: list[SourceChunk], style_examples: list[Sour
     subject, body, quick = generate_reply(mail, chunks, style_examples, tone, user_name,
                                           instruction, opts, spotlight_mode)
     source_text = reply_source_text(mail, chunks, instruction, user_name)
-    return _finish(subject, body, source_text, chunks, opts.model, quick)
+    return _finish(subject, body, source_text, chunks, opts.model, quick,
+                   reply_link_source(mail, chunks, instruction))
 
 
 def compose_email(instruction: str, chunks: list[SourceChunk], tone: str, user_name: str,

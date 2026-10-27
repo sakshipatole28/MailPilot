@@ -54,6 +54,7 @@ class Settings(BaseSettings):
 
     category_preset: str = "general"  # "general" or "student" (see app/llm/taxonomy.py)
     auto_triage: bool = True  # triage new mail in the background after every sync
+    self_correct: bool = True  # draft graph may revise unsupported facts (up to 2 rounds)
     structured_outputs: bool = True  # constrain replies to JSON schemas where the provider can
     otlp_endpoint: str = ""  # e.g. http://localhost:4318/v1/traces to also export OpenTelemetry spans
     spotlight: str = "datamark"  # prompt-injection defense: "none", "delimit" or "datamark"

@@ -1,0 +1,6 @@
+defense,attacks,succeeded,attack_success_rate
+prompt only: none,8,7,0.875
+prompt only: delimit,8,7,0.875
+prompt only: datamark,7,5,0.714
+shipped pipeline (datamark + LLM/regex detection + self-check + link guardrail),8,3,0.375
+regex detector alone,8,7,detected 1/8

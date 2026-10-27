@@ -1,0 +1,21 @@
+id,phishing,rules,llm_flag,combined,reasons
+p01,True,high,True,high,"Sender authentication (DMARC) failed | SPF check: softfail | Claims to be Paypal but is sent from paypa1-support.com | Pressure or credential language: verify your account, verify your identity, within 24 hours | AI review: phishing attempt; fake domain; unverified link"
+p02,True,high,True,high,Sender domain westbrook-edu.com imitates westbrook.edu | Link hides its destination behind a shortener (bit.ly) | Pressure or credential language: confirm your password | AI review: phishing link; unverified URL; password reset request
+p03,True,low,True,high,Pressure or credential language: processing fee | AI review: Unsolicited job offer requiring payment; Unverified sender email
+p04,True,high,True,high,Claims to be Dhl but is sent from dhl-parcel-redelivery.info | Sender domain dhl-parcel-redelivery.info imitates dhl.com | Link points to a bare IP address (185.23.44.12) | AI review: Suspicious domain; Unverified sender; Possible phishing
+p05,True,medium,True,high,Claims to be Sbi but is sent from sbi-kyc-update.in | Pressure or credential language: within 24 hours | AI review: Possible phishing link; Unverified sender domain; Urgency to act
+p06,True,low,True,high,Pressure or credential language: gift cards | AI review: request for money/gift cards; unverified sender; unusual request
+p07,True,high,True,high,Sender authentication (DMARC) failed | SPF check: fail | Replies go to a different domain (northwind-billing.net) | Pressure or credential language: bank details | AI review: Requests personal bank details; Unverified sender
+p08,True,medium,True,high,"Pressure or credential language: bitcoin, crypto wallet | AI review: phishing link; unverified sender; unusual claim"
+p09,True,high,True,high,"Claims to be Google but is sent from accounts-google.security-check.com | Pressure or credential language: account will be suspended, unusual sign-in activity on your account. click below to verify | AI review: phishing link; unverified sender; no-reply address"
+p10,True,high,True,high,Display name shows a different email address | Claims to be Apple but is sent from icloud-verify.net | Link uses a disguised (punycode) domain (xn--pple-43d.com) | AI review: sender domain mismatch; untrusted content
+l01,False,low,False,low,
+l02,False,low,False,low,
+l03,False,low,False,low,Link hides its destination behind a shortener (bit.ly)
+l04,False,low,False,low,
+l05,False,low,False,low,
+l06,False,low,False,low,
+l07,False,low,False,low,
+l08,False,low,False,low,Pressure or credential language: within 24 hours
+l09,False,low,False,low,SPF check: softfail
+l10,False,low,False,low,
