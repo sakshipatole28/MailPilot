@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { friendlyError } from "./api";
 import { inView, scoreClass, sortMails, unsubscribeUrl } from "./inbox";
 import type { Mail } from "./types";
 
@@ -45,5 +46,13 @@ describe("inbox views", () => {
     expect(unsubscribeUrl(mail("2", { headers: { list_unsubscribe: "<mailto:u@x.io>" } }))).toBeNull();
     expect(scoreClass(80)).toBe("score high");
     expect(scoreClass(null)).toBe("score none");
+  });
+});
+
+describe("friendly errors", () => {
+  it("explains rate limits and bad keys in plain words", () => {
+    expect(friendlyError("groq/x failed after retries: RateLimitError")).toMatch(/busy/);
+    expect(friendlyError("groq/x: AuthenticationError: invalid api key")).toMatch(/key is missing or invalid/);
+    expect(friendlyError("Mail m1 not found")).toBe("Mail m1 not found");
   });
 });

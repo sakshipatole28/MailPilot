@@ -30,9 +30,23 @@ async function request<T>(path: string, method = "GET", body?: unknown): Promise
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     const detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
-    throw new Error(detail || `${res.status} ${res.statusText}`);
+    throw new Error(friendlyError(detail || `${res.status} ${res.statusText}`));
   }
   return res.json();
+}
+
+/** Turn backend/provider errors into something a person can act on. */
+export function friendlyError(detail: string): string {
+  const d = detail.toLowerCase();
+  if (d.includes("ratelimit") || d.includes("rate limit") || d.includes("429"))
+    return "The AI is busy right now (free-tier limit). Try again in a minute.";
+  if (d.includes("authentication") || d.includes("api key") || d.includes("401"))
+    return "The AI key is missing or invalid. Add it in Settings → Advanced, or in the backend's .env.";
+  if (d.includes("local-only")) return detail;
+  if (d.includes("token") && d.includes("gmail")) return "Gmail login expired. Run the Gmail login command again.";
+  if (d.includes("could not read mail source"))
+    return "Couldn't reach your mailbox. If you use Gmail, the weekly login may have expired.";
+  return detail;
 }
 
 export async function apiUrl(path: string): Promise<string> {
@@ -40,6 +54,7 @@ export async function apiUrl(path: string): Promise<string> {
 }
 
 export const api = {
+  health: () => request<{ ok: boolean }>("/health"),
   sync: () => request<{ fetched: number; new: number; queued: number }>("/mail/sync", "POST"),
   mails: () => request<Mail[]>("/mail"),
   updateMail: (id: string, update: { is_read?: boolean; replied?: boolean; category?: string }) =>

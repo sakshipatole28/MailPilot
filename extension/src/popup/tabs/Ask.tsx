@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { api } from "../../shared/api";
+import { timeAgo } from "../../shared/format";
 import type { AskAnswer, Mail } from "../../shared/types";
-import { messageOf, Notice } from "../ui";
+import { AskIcon } from "../icons";
+import { EmptyState, messageOf, Notice } from "../ui";
 
 const EXAMPLES = [
   "When is my next interview?",
   "What do I have to pay this month?",
   "Did anyone send me a link I need to open?",
+  "What did my professor ask for?",
 ];
 
 export function Ask({ onOpen }: { onOpen: (mail: Mail) => void }) {
@@ -16,11 +19,13 @@ export function Ask({ onOpen }: { onOpen: (mail: Mail) => void }) {
   const [error, setError] = useState("");
 
   async function ask(q: string) {
+    if (q.trim().length < 3) return;
     setQuestion(q);
     setBusy(true);
     setError("");
+    setAnswer(null);
     try {
-      setAnswer(await api.ask(q));
+      setAnswer(await api.ask(q.trim()));
     } catch (e) {
       setError(messageOf(e));
     } finally {
@@ -35,50 +40,54 @@ export function Ask({ onOpen }: { onOpen: (mail: Mail) => void }) {
 
   return (
     <section>
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (question.trim().length >= 3) ask(question.trim());
-        }}
-      >
+      <form className="ask-box" onSubmit={(e) => { e.preventDefault(); ask(question); }}>
         <input
-          placeholder="Ask your inbox anything…"
+          placeholder="Ask anything about your mail…"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
+          autoFocus
         />
-        <button className="primary" disabled={busy || question.trim().length < 3}>
-          {busy ? "Searching…" : "Ask"}
-        </button>
+        <button className="primary" disabled={busy || question.trim().length < 3}>{busy ? "…" : "Ask"}</button>
       </form>
-      <div className="chips">
-        {EXAMPLES.map((q) => (
-          <button key={q} className="chip" onClick={() => ask(q)} disabled={busy}>{q}</button>
-        ))}
-      </div>
+
       <Notice error={error} />
+      {busy && (
+        <div className="thinking"><span className="dot" /><span className="dot" /><span className="dot" /> Searching your inbox</div>
+      )}
+
       {answer && (
-        <div className="answer">
+        <div className="card answer">
           <p>{answer.answer}</p>
           {answer.searches.length > 1 && (
-            <p className="muted small">Searched: {answer.searches.map((q) => `"${q}"`).join(" → ")}</p>
+            <p className="muted tiny">Searched: {answer.searches.map((q) => `"${q}"`).join(" → ")}</p>
           )}
           {answer.citations.length > 0 && (
             <>
-              <h3>Sources</h3>
-              <ul className="list">
+              <h3>From these mails</h3>
+              <ul className="cites">
                 {answer.citations.map((c) => (
                   <li key={c.mail_id} onClick={() => open(c.mail_id)}>
                     <div className="subject">{c.subject}</div>
-                    <div className="muted small">
-                      {c.sender} · {new Date(c.received_at).toLocaleDateString()}
-                    </div>
+                    <div className="muted tiny">{c.sender} · {timeAgo(c.received_at)}</div>
                   </li>
                 ))}
               </ul>
             </>
           )}
         </div>
+      )}
+
+      {!answer && !busy && (
+        <>
+          <EmptyState emoji="🔎" title="Ask your inbox">
+            Answers come only from your mail, with links to the mails they used.
+          </EmptyState>
+          <div className="examples">
+            {EXAMPLES.map((q) => (
+              <button key={q} className="example" onClick={() => ask(q)}><AskIcon /> {q}</button>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );

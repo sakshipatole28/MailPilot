@@ -23,16 +23,16 @@ function CategoryEditor({
   const update = (i: number, patch: Partial<Category>) =>
     onChange(categories.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   return (
-    <fieldset>
-      <legend>Categories</legend>
-      <p className="muted small">
-        Describe each category in plain words; the AI reads the description. Corrections you make
-        in the Draft tab teach it too.
+    <div>
+      <h3>Categories</h3>
+      <p className="muted tiny">
+        Describe each category in plain words; the AI reads the description. Fixing a mail's
+        category teaches it too.
       </p>
-      <div className="row">
-        Presets:
+      <div className="chips">
+        <span className="muted tiny">Start from:</span>
         {Object.keys(presets).map((name) => (
-          <button key={name} onClick={() => onChange(presets[name])}>{name}</button>
+          <button key={name} className="chip" onClick={() => onChange(presets[name])}>{name}</button>
         ))}
       </div>
       {categories.map((c, i) => (
@@ -47,8 +47,8 @@ function CategoryEditor({
           <button onClick={() => onChange(categories.filter((_, j) => j !== i))} aria-label="Remove">×</button>
         </div>
       ))}
-      <button onClick={() => onChange([...categories, { name: "", description: "" }])}>Add category</button>
-    </fieldset>
+      <button className="link" onClick={() => onChange([...categories, { name: "", description: "" }])}>+ Add category</button>
+    </div>
   );
 }
 
@@ -96,48 +96,59 @@ export function Settings() {
   const model = local.model || backend?.model || "";
   return (
     <section className="form">
-      <label>
-        Model
-        <input list="models" value={model} onChange={(e) => setLocal({ ...local, model: e.target.value })} />
-        <datalist id="models">
-          {backend?.suggested_models.map((m) => <option key={m} value={m} />)}
-        </datalist>
-      </label>
       {backend && (
-        <>
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={backend.auto_triage}
-              onChange={(e) => setBackend({ ...backend, auto_triage: e.target.checked })}
-            />
-            Triage new mail automatically (uses the backend's API key)
-          </label>
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={backend.local_only}
-              onChange={(e) => setBackend({ ...backend, local_only: e.target.checked })}
-            />
-            Local only (allow only ollama/ models)
-          </label>
+        <div className="card">
+          <h3>You</h3>
           <label>
-            Your name (sign-off)
+            Your name (used to sign drafts)
             <input value={backend.user_name} onChange={(e) => setBackend({ ...backend, user_name: e.target.value })} />
           </label>
           <label>
-            Tone
+            Writing tone
             <input value={backend.tone} onChange={(e) => setBackend({ ...backend, tone: e.target.value })} />
           </label>
+        </div>
+      )}
+
+      <div className="card">
+        <h3>AI</h3>
+        <label>
+          Model
+          <input list="models" value={model} onChange={(e) => setLocal({ ...local, model: e.target.value })} />
+          <datalist id="models">
+            {backend?.suggested_models.map((m) => <option key={m} value={m} />)}
+          </datalist>
+        </label>
+        {backend && (
+          <>
+            <label className="switch">
+              <input type="checkbox" checked={backend.auto_triage}
+                onChange={(e) => setBackend({ ...backend, auto_triage: e.target.checked })} />
+              <span className="track" />
+              <span>Sort new mail automatically</span>
+            </label>
+            <label className="switch">
+              <input type="checkbox" checked={backend.local_only}
+                onChange={(e) => setBackend({ ...backend, local_only: e.target.checked })} />
+              <span className="track" />
+              <span>Private mode: only local (Ollama) models</span>
+            </label>
+          </>
+        )}
+      </div>
+
+      {backend && (
+        <div className="card">
           <CategoryEditor
             categories={backend.categories}
             presets={backend.presets}
             onChange={(categories) => setBackend({ ...backend, categories })}
           />
-        </>
+        </div>
       )}
-      <details>
-        <summary>API keys and backend</summary>
+
+      <details className="card">
+        <summary>Advanced: API keys, backend, notes</summary>
         <label>
           Backend URL
           <input value={local.apiBase} onChange={(e) => setLocal({ ...local, apiBase: e.target.value })} />
@@ -153,14 +164,15 @@ export function Settings() {
             />
           </label>
         ))}
-        <p className="muted small">
-          Keys stay in this browser and are sent only to your backend, per request. Leave empty to
-          use the keys in the backend's .env (needed for background triage).
+        <p className="muted tiny">
+          Keys stay in this browser and go only to your own backend. Leave empty to use the backend's
+          .env keys (needed for automatic sorting).
         </p>
-      </details>
-      <div className="row">
-        <button className="primary" onClick={save}>Save</button>
         <button onClick={reindex}>Re-index my notes</button>
+      </details>
+
+      <div className="sticky-save">
+        <button className="primary wide" onClick={save}>Save settings</button>
       </div>
       <Notice error={error} status={status} />
     </section>

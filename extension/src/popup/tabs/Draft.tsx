@@ -1,14 +1,21 @@
 import { useEffect, useState } from "react";
 import { api } from "../../shared/api";
-import { scoreClass, unsubscribeUrl } from "../../shared/inbox";
+import { timeAgo } from "../../shared/format";
+import { unsubscribeUrl } from "../../shared/inbox";
 import type { Category, GeneratedEmail, Mail } from "../../shared/types";
-import { CategoryBadge, GeneratedView, messageOf, Notice } from "../ui";
+import { BackIcon, ShieldIcon, SparkIcon } from "../icons";
+import { Avatar, CategoryBadge, GeneratedView, messageOf, Notice, priorityClass } from "../ui";
 
-export function Draft({ mail, onChange }: { mail: Mail | null; onChange: (m: Mail) => void }) {
+export function Draft({ mail, onChange, onBack }: {
+  mail: Mail;
+  onChange: (m: Mail) => void;
+  onBack: () => void;
+}) {
   const [instruction, setInstruction] = useState("");
   const [useRag, setUseRag] = useState(true);
   const [draft, setDraft] = useState<GeneratedEmail | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [showMail, setShowMail] = useState(false);
   const [rated, setRated] = useState(0);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -16,17 +23,8 @@ export function Draft({ mail, onChange }: { mail: Mail | null; onChange: (m: Mai
 
   useEffect(() => {
     api.settings().then((s) => setCategories(s.categories)).catch(() => undefined);
-  }, []);
-
-  useEffect(() => {
-    setDraft(null);
-    setRated(0);
-    setStatus("");
-    setError("");
-    if (mail && !mail.is_read) api.updateMail(mail.id, { is_read: true }).then(onChange).catch(() => {});
-  }, [mail?.id]);
-
-  if (!mail) return <p className="muted">Pick a mail in the Inbox tab.</p>;
+    if (!mail.is_read) api.updateMail(mail.id, { is_read: true }).then(onChange).catch(() => {});
+  }, [mail.id]);
 
   async function run(task: () => Promise<void>) {
     setBusy(true);
@@ -42,16 +40,14 @@ export function Draft({ mail, onChange }: { mail: Mail | null; onChange: (m: Mai
 
   const generate = () =>
     run(async () => {
-      setStatus("Drafting…");
       setDraft(await api.draft(mail.id, instruction, useRag));
       setRated(0);
-      setStatus("");
     });
 
   const findTasks = () =>
     run(async () => {
       const found = await api.extractDeadlines(mail.id);
-      setStatus(found.length ? `Tasks: ${found.map((d) => d.title).join(", ")}` : "No tasks found");
+      setStatus(found.length ? `Added ${found.length} task${found.length > 1 ? "s" : ""}` : "No tasks in this mail");
       chrome.runtime.sendMessage({ type: "refresh-deadlines" }).catch(() => undefined);
     });
 
@@ -61,7 +57,7 @@ export function Draft({ mail, onChange }: { mail: Mail | null; onChange: (m: Mai
   const correct = (category: string) =>
     run(async () => {
       onChange(await api.updateMail(mail.id, { category }));
-      setStatus(`Saved. Similar mail will be sorted into "${category}".`);
+      setStatus(`Got it. Similar mail will go to "${category}"`);
     });
 
   async function rate(rating: number) {
@@ -72,93 +68,99 @@ export function Draft({ mail, onChange }: { mail: Mail | null; onChange: (m: Mai
 
   const unsubscribe = unsubscribeUrl(mail);
   return (
-    <section>
-      <div className="mail-head">
-        <div className="subject">{mail.subject}</div>
-        <div className="muted small">
-          {mail.sender_name} &lt;{mail.sender}&gt; · {new Date(mail.received_at).toLocaleString()}
-        </div>
-        {mail.summary && <p className="summary">{mail.summary}</p>}
-        <div className="row">
-          <span className={scoreClass(mail.priority_score)}>{mail.priority_score ?? "…"}</span>
-          <CategoryBadge category={mail.category} />
-          {mail.intents.filter((i) => i !== "fyi").map((i) => <span key={i} className="badge">{i}</span>)}
-          {unsubscribe && (
-            <a className="small" href={unsubscribe} target="_blank" rel="noreferrer">Unsubscribe</a>
+    <section className="detail">
+      <button className="back" onClick={onBack}><BackIcon /> Back</button>
+
+      <div className={`card mail-card ${priorityClass(mail.priority_score)}`}>
+        <div className="mail-card-head">
+          <Avatar name={mail.sender_name} email={mail.sender} />
+          <div className="grow">
+            <div className="sender">{mail.sender_name || mail.sender}</div>
+            <div className="muted tiny">{mail.sender} · {timeAgo(mail.received_at)}</div>
+          </div>
+          {mail.priority_score !== null && (
+            <span className="score-badge" title={mail.priority_reasons.join("\n")}>{mail.priority_score}</span>
           )}
         </div>
+        <h2 className="mail-subject">{mail.subject}</h2>
+        {mail.summary && <p className="ai-summary"><SparkIcon /> {mail.summary}</p>}
+        <div className="tags">
+          <CategoryBadge category={mail.category} />
+          {mail.intents.filter((i) => i !== "fyi").map((i) => <span key={i} className="chip-tag plain">{i}</span>)}
+          {unsubscribe && <a className="tiny" href={unsubscribe} target="_blank" rel="noreferrer">Unsubscribe</a>}
+        </div>
+        <button className="link" onClick={() => setShowMail(!showMail)}>{showMail ? "Hide" : "Show"} full mail</button>
+        {showMail && <pre className="mail-body">{mail.body}</pre>}
       </div>
 
       {mail.risk_level && mail.risk_level !== "low" && (
-        <div className={`notice ${mail.risk_level === "high" ? "error" : "warn"}`}>
-          <strong>{mail.risk_level === "high" ? "Likely phishing or scam" : "Check the sender"}</strong>
+        <div className={`callout ${mail.risk_level === "high" ? "danger" : "warn"}`}>
+          <strong><ShieldIcon /> {mail.risk_level === "high" ? "This looks like phishing" : "Be careful with this sender"}</strong>
           <ul>{mail.risk_reasons.map((r) => <li key={r}>{r}</li>)}</ul>
         </div>
       )}
 
-      <details>
-        <summary>Show mail</summary>
-        <pre className="mail-body">{mail.body}</pre>
-      </details>
-      {mail.priority_reasons.length > 0 && (
-        <details>
-          <summary>Why this priority</summary>
-          <ul className="small">{mail.priority_reasons.map((r) => <li key={r}>{r}</li>)}</ul>
-        </details>
-      )}
-      <label className="row small">
-        Category
-        <select value={mail.category ?? ""} onChange={(e) => correct(e.target.value)} disabled={busy}>
-          {categories.map((c) => <option key={c.name}>{c.name}</option>)}
-        </select>
-        {mail.classified_by === "user" && <span className="muted">(your correction)</span>}
-      </label>
-
-      <input
-        placeholder="Optional instruction, e.g. accept the Thursday slot"
-        value={instruction}
-        onChange={(e) => setInstruction(e.target.value)}
-      />
-      <div className="row">
-        <button className="primary" onClick={generate} disabled={busy}>Draft reply</button>
-        <button onClick={findTasks} disabled={busy}>Find tasks</button>
-        <button onClick={markReplied} disabled={busy || mail.replied}>
-          {mail.replied ? "Replied" : "Mark replied"}
-        </button>
-        <label className="small">
+      <div className="card">
+        <div className="composer">
+          <input
+            placeholder="Anything to add? e.g. accept the Thursday slot"
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !busy && generate()}
+          />
+          <button className="primary" onClick={generate} disabled={busy}>
+            {busy && !draft ? "Writing…" : draft ? "Rewrite" : "✨ Draft reply"}
+          </button>
+        </div>
+        <label className="toggle">
           <input type="checkbox" checked={useRag} onChange={(e) => setUseRag(e.target.checked)} />
-          use my notes
+          <span>Use my notes (resume, availability, past replies)</span>
         </label>
       </div>
+
       <Notice error={error} status={status} />
 
       {draft && (
         <>
           {draft.quick_replies.length > 0 && (
             <div className="chips">
-              <span className="muted small">Quick reply:</span>
+              <span className="muted tiny">Quick replies:</span>
               {draft.quick_replies.map((q) => (
                 <button key={q} className="chip" onClick={() => setDraft({ ...draft, body: q })}>{q}</button>
               ))}
             </div>
           )}
           {draft.revisions > 0 && (
-            <p className="muted small">
-              Self-checked: the first draft stated {draft.first_pass_issues} thing
-              {draft.first_pass_issues === 1 ? "" : "s"} your mail and notes don't support, so it
-              was revised {draft.revisions}×.
+            <p className="muted tiny">
+              ✓ Fact-checked: fixed {draft.first_pass_issues} unsupported detail
+              {draft.first_pass_issues === 1 ? "" : "s"} before showing you this.
             </p>
           )}
           <GeneratedView email={draft} onEdit={setDraft} />
-          <div className="row small">
-            Rate this draft:
+          <div className="rating">
+            <span className="muted tiny">How good is this draft?</span>
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} className={`star ${rated >= n ? "on" : ""}`} onClick={() => rate(n)}>
-                {n}
-              </button>
+              <button key={n} className={`star ${rated >= n ? "on" : ""}`} onClick={() => rate(n)} aria-label={`${n} stars`}>★</button>
             ))}
           </div>
         </>
+      )}
+
+      <div className="card actions">
+        <button onClick={findTasks} disabled={busy}>Find tasks</button>
+        <button onClick={markReplied} disabled={busy || mail.replied}>{mail.replied ? "✓ Replied" : "Mark replied"}</button>
+        <label className="inline">
+          Category
+          <select value={mail.category ?? ""} onChange={(e) => correct(e.target.value)} disabled={busy}>
+            {categories.map((c) => <option key={c.name}>{c.name}</option>)}
+          </select>
+        </label>
+      </div>
+      {mail.priority_reasons.length > 0 && (
+        <details className="why">
+          <summary>Why priority {mail.priority_score}?</summary>
+          <ul>{mail.priority_reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+        </details>
       )}
     </section>
   );

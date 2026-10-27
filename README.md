@@ -6,7 +6,7 @@ An AI email assistant that runs on your own machine: a Chrome/Brave extension pl
 
 ![Demo](docs/demo.gif)
 
-*Recorded from the real extension and backend on the sample inbox (`groq/openai/gpt-oss-120b`). It shows background triage, split views, a phishing warning, a self-checked reply draft with quick replies, tasks, Ask with citations, and the category editor. More frames are in [docs/screenshots/](docs/screenshots/).*
+*Recorded from the real extension and backend on the sample inbox: priority-sorted inbox with AI summaries, split views, a phishing warning with reasons, a mail with its AI summary, a fact-checked draft with quick replies, tasks, Ask with a cited answer, one-line compose and settings. Light and dark mode follow the system. More frames are in [docs/screenshots/](docs/screenshots/).*
 
 ## What it does
 
