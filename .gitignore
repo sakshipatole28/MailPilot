@@ -11,3 +11,4 @@ __pycache__/
 node_modules/
 extension/dist/
 .ipynb_checkpoints/
+*.log

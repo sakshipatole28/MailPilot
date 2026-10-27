@@ -266,12 +266,13 @@ def set_triage_status(mail_ids: list[str], status: str | None, error: str = "") 
                          [(status, error[:300], i) for i in mail_ids])
 
 
-def untriaged_mail_ids(limit: int = 1000) -> list[str]:
-    """Mails never triaged (or that failed), newest first."""
+def untriaged_mail_ids(limit: int = 1000, include_pending: bool = False) -> list[str]:
+    """Mails never triaged (or that failed), newest first. `include_pending` also returns mail
+    queued by a previous process: the queue lives in memory, so a restart loses it."""
+    statuses = "triage_status IS NULL OR triage_status IN ('failed'" + (", 'pending')" if include_pending else ")")
     with get_conn() as conn:
-        rows = conn.execute(
-            "SELECT id FROM mails WHERE triage_status IS NULL OR triage_status = 'failed' "
-            "ORDER BY received_at DESC LIMIT ?", (limit,)).fetchall()
+        rows = conn.execute(f"SELECT id FROM mails WHERE {statuses} ORDER BY received_at DESC LIMIT ?",
+                            (limit,)).fetchall()
     return [r["id"] for r in rows]
 
 

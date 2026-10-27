@@ -19,6 +19,7 @@ db.init_db()
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     worker.start()  # background triage of newly synced mail
+    worker.enqueue(db.untriaged_mail_ids(include_pending=True))  # resume work a restart cut off
     yield
 
 

@@ -219,3 +219,17 @@ def test_mark_replied_and_404(api):
 
 def test_rag_ingest_endpoint(api):
     assert api.post("/rag/ingest").json()["chunks"] > 0
+
+
+def test_restart_resumes_pending_triage(api, monkeypatch):
+    from app import db
+    from app.jobs import worker
+    from app.main import app as main_app
+
+    worker.queued.clear()  # simulate a restart: the in-memory queue is gone, statuses say pending
+    while not worker.queue.empty():
+        worker.queue.get_nowait()
+    assert len(db.untriaged_mail_ids()) == 0 and len(db.untriaged_mail_ids(include_pending=True)) >= 50
+    monkeypatch.setattr(worker, "start", lambda: None)  # don't run real triage in the test
+    with TestClient(main_app):  # runs the startup hook
+        assert worker.pending() >= 50
